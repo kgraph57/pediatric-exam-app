@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  input, textarea, select, button {
+    @apply outline-none focus:outline-none;
+  }
+}
+
+/* Fullscreen backdrop fixes to avoid black screen */
+:fullscreen {
+  background-color: #F2F2F7; /* match app page background */
+}
+:fullscreen::backdrop {
+  background-color: #F2F2F7; /* prevent black overlay behind fullscreen element */
+}
+/* Safari/WebKit vendor prefix fallbacks */
+:-webkit-full-screen {
+  background-color: #F2F2F7;
+}

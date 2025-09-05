@@ -1,0 +1,47 @@
+{
+  "name": "pediatric-exam-app",
+  "version": "1.0.0",
+  "description": "小児科専門医試験対策アプリケーション - Web版・モバイル版",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:mobile": "cd apps/mobile && npm start",
+    "build:web": "cd apps/web && npm run build",
+    "build:mobile": "cd apps/mobile && npm run build",
+    "install:web": "cd apps/web && npm install",
+    "install:mobile": "cd apps/mobile && npm install",
+    "install:all": "npm run install:web && npm run install:mobile",
+    "typecheck:all": "cd apps/web && npm run typecheck && cd ../mobile && npm run typecheck",
+    "lint:all": "cd apps/web && npm run lint && cd ../mobile && npm run lint",
+    "format:all": "cd apps/web && npm run format && cd ../mobile && npm run format",
+    "clean": "rm -rf apps/web/node_modules apps/mobile/node_modules apps/web/dist apps/mobile/dist",
+    "start:web": "cd apps/web && npm run dev",
+    "start:mobile": "cd apps/mobile && npm start"
+  },
+  "keywords": [
+    "pediatrics",
+    "medical",
+    "exam",
+    "education",
+    "react",
+    "react-native",
+    "typescript",
+    "web",
+    "mobile"
+  ],
+  "author": "Pediatric Exam App Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/pediatric-exam-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/pediatric-exam-app/issues"
+  },
+  "homepage": "https://github.com/your-username/pediatric-exam-app#readme"
+}

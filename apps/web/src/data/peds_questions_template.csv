@@ -1,0 +1,5 @@
+type,category,difficulty,question,option_A,option_B,option_C,option_D,option_E,correct,explain_A,explain_B,explain_C,explain_D,explain_E,key_points,references
+SBA,内分泌・代謝,専門医レベル,症例文…最も適切は？,A案,B案,C案,D案,E案,2,×Aの理由,×Bの理由,◯Cの理由,×Dの理由,×Eの理由,"ポイント1|ポイント2","日本○○学会2023|ESC 2021"
+MBA,循環器,標準レベル,症例文…正しいものを2つ選べ。,A案,B案,C案,D案,E案,"0|4",◯Aの理由,×Bの理由,×Cの理由,×Dの理由,◯Eの理由,"ポイント1|ポイント2","参考1"
+
+

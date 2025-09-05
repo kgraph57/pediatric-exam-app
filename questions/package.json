@@ -1,0 +1,27 @@
+{
+  "name": "pediatric-exam-questions",
+  "version": "1.0.0",
+  "description": "小児科専門医対策 問題管理システム",
+  "main": "index.js",
+  "scripts": {
+    "init": "node scripts/convert_questions.js",
+    "validate": "node scripts/validate_questions.js",
+    "merge": "node scripts/merge_questions.js",
+    "build": "npm run validate && npm run merge",
+    "stats": "node scripts/merge_questions.js | grep -E '総問題数|カテゴリ数|難易度数|年度数'"
+  },
+  "keywords": [
+    "pediatric",
+    "exam",
+    "questions",
+    "management",
+    "medical"
+  ],
+  "author": "System",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
