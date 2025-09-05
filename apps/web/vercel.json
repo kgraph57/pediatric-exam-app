@@ -26,10 +26,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "installCommand": "npm ci",
-  "framework": "react-router",
-  "functions": {
-    "src/app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "framework": "react-router"
 }
