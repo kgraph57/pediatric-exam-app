@@ -487,7 +487,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
     }
   };
 
-  const finishEarly = () => {
+  const finishEarly = async () => {
     if (typeof window !== 'undefined') {
       const ok = window.confirm('演習を途中で終了して結果を表示しますか？');
       if (!ok) return;
