@@ -17,32 +17,61 @@ export function LoginModal({ isOpen, onClose, onSuccess }) {
     setError('');
 
     try {
-      const response = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // デモユーザーのログイン
+      if (formData.email === 'demo@example.com' && formData.password === 'demo123') {
+        const demoUser = {
+          id: 'demo',
+          name: 'デモユーザー',
+          email: 'demo@example.com',
+          hospital: '東京小児科病院',
+          department: '小児科',
+          experienceYears: '5',
+          targetLevel: 7,
+          specialty: '循環器',
+          studyGoal: '小児科専門医取得',
+          dailyGoal: 15,
+          weeklyGoal: 80,
+          level: 1,
+          total_answered: 0,
+          total_correct: 0,
+          streak: 0,
+          createdAt: new Date().toISOString()
+        };
 
-      const responseData = await response.json();
-
-      if (response.ok) {
         // ログイン成功時、ユーザー情報をローカルストレージに保存
-        localStorage.setItem('currentUser', JSON.stringify(responseData.user));
+        localStorage.setItem('currentUser', JSON.stringify(demoUser));
         
-        // ユーザーの学習進捗を適用
-        const userId = responseData.user.id;
+        // デモユーザーの学習進捗を生成
+        const userId = demoUser.id;
         let userProgress = applyUserProgress(userId);
         
-        // デモユーザーの場合は進捗を生成
-        if (userId === 'demo') {
+        if (!userProgress || Object.keys(userProgress.studyProgress).length === 0) {
           userProgress = generateDemoProgress(userId);
           saveUserProgress(userId, userProgress);
           applyUserProgress(userId);
         }
+        
+        // 成功メッセージを表示
+        alert('ログインが完了しました！');
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      // 登録済みユーザーのログイン
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      const user = registeredUsers.find(u => u.email === formData.email && u.password === formData.password);
+      
+      if (user) {
+        // ログイン成功時、ユーザー情報をローカルストレージに保存
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        // ユーザーの学習進捗を適用
+        const userId = user.id;
+        let userProgress = applyUserProgress(userId);
+        
         // 新規ユーザーで進捗がない場合は初期化
-        else if (!userProgress || Object.keys(userProgress.studyProgress).length === 0) {
+        if (!userProgress || Object.keys(userProgress.studyProgress).length === 0) {
           userProgress = generateNewUserProgress();
           saveUserProgress(userId, userProgress);
           applyUserProgress(userId);
@@ -52,8 +81,53 @@ export function LoginModal({ isOpen, onClose, onSuccess }) {
         alert('ログインが完了しました！');
         onSuccess();
         onClose();
-      } else {
-        setError(responseData.message || 'ログインに失敗しました');
+        return;
+      }
+
+      // APIログインを試行（フォールバック）
+      try {
+        const response = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok) {
+          // ログイン成功時、ユーザー情報をローカルストレージに保存
+          localStorage.setItem('currentUser', JSON.stringify(responseData.user));
+          
+          // ユーザーの学習進捗を適用
+          const userId = responseData.user.id;
+          let userProgress = applyUserProgress(userId);
+          
+          // デモユーザーの場合は進捗を生成
+          if (userId === 'demo') {
+            userProgress = generateDemoProgress(userId);
+            saveUserProgress(userId, userProgress);
+            applyUserProgress(userId);
+          }
+          // 新規ユーザーで進捗がない場合は初期化
+          else if (!userProgress || Object.keys(userProgress.studyProgress).length === 0) {
+            userProgress = generateNewUserProgress();
+            saveUserProgress(userId, userProgress);
+            applyUserProgress(userId);
+          }
+          
+          // 成功メッセージを表示
+          alert('ログインが完了しました！');
+          onSuccess();
+          onClose();
+          return;
+        } else {
+          setError(responseData.message || 'ログインに失敗しました');
+        }
+      } catch (apiError) {
+        console.log('APIログインに失敗、ローカル認証を試行:', apiError);
+        setError('メールアドレスまたはパスワードが正しくありません');
       }
     } catch (error) {
       console.error('Login error:', error);
