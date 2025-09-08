@@ -99,15 +99,9 @@ export function LearningCalendar({ userId }) {
   const { data: calendarData, isLoading } = useQuery({
     queryKey: ['learning-calendar', userId, year, month],
     queryFn: async () => {
-      try {
-        const res = await fetch(`/api/users/${userId}/learning-calendar?year=${year}&month=${month}`);
-        if (!res.ok) throw new Error('Failed to fetch calendar data');
-        return res.json();
-      } catch (error) {
-        console.log('Using mock data for learning calendar');
-        // データベース接続がない場合のモックデータ
-        return generateMockCalendarData(year, month);
-      }
+      // デモモードでは常にモックデータを使用
+      console.log('Using mock data for learning calendar');
+      return generateMockCalendarData(year, month);
     },
     enabled: !!userId,
   });

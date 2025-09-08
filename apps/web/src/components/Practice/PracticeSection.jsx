@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Pencil, Flag, Maximize2, Minimize2 } from "lucide-react";
 import { saveCurrentSessionProgress } from "../../utils/progressManager";
+import { demoQuestions, demoMeta } from "../../data/demoQuestions";
 
 export function PracticeSection({ user, onToggleSidebar }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -49,7 +50,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
     );
     
     if (categoryKey) {
-      return meta.categoryStats[key].count;
+      return meta.categoryStats[categoryKey].count;
     }
     
     return '約50';
@@ -66,10 +67,25 @@ export function PracticeSection({ user, onToggleSidebar }) {
           setMeta({
             categories: Array.isArray(data.categories) ? data.categories : [],
             difficulties: Array.isArray(data.difficulties) ? data.difficulties : [],
+            categoryStats: data.categoryStats || {}
+          });
+        } else {
+          // フォールバック: デモデータを使用
+          console.log('Using fallback demo meta data:', demoMeta);
+          setMeta({
+            categories: demoMeta.categories,
+            difficulties: demoMeta.difficulties,
+            categoryStats: demoMeta.categoryStats
           });
         }
       } catch (error) {
         console.error('Error loading meta:', error);
+        // エラー時もデモデータを使用
+        setMeta({
+          categories: demoMeta.categories,
+          difficulties: demoMeta.difficulties,
+          categoryStats: demoMeta.categoryStats
+        });
       }
       setLoading(false);
     };
@@ -87,8 +103,34 @@ export function PracticeSection({ user, onToggleSidebar }) {
   }, []);
 
   // 学習進捗を保存する関数
-  const saveProgress = (questionId, isCorrect, category) => {
+  const saveProgress = async (questionId, isCorrect, category, timeSpent = 0) => {
     try {
+      // APIに学習進捗を保存
+      if (user?.id) {
+        try {
+          const response = await fetch(`/api/users/${user.id}/progress`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              questionId,
+              isCorrect,
+              timeSpent,
+              category,
+              difficulty: questions.find(q => q.id === questionId)?.difficulty
+            }),
+          });
+
+          if (!response.ok) {
+            console.log('API保存に失敗、ローカルストレージに保存');
+          }
+        } catch (apiError) {
+          console.log('API保存エラー、ローカルストレージに保存:', apiError);
+        }
+      }
+
+      // ローカルストレージにも保存（フォールバック）
       const progress = JSON.parse(localStorage.getItem('studyProgress') || '{}');
       if (!progress[category]) {
         progress[category] = {};
@@ -97,7 +139,8 @@ export function PracticeSection({ user, onToggleSidebar }) {
       progress[category][questionId] = {
         isCorrect,
         timestamp: new Date().toISOString(),
-        attempts: (progress[category][questionId]?.attempts || 0) + 1
+        attempts: (progress[category][questionId]?.attempts || 0) + 1,
+        timeSpent
       };
       
       localStorage.setItem('studyProgress', JSON.stringify(progress));
@@ -121,6 +164,39 @@ export function PracticeSection({ user, onToggleSidebar }) {
     }
   };
 
+  // 学習セッションを保存する関数
+  const saveSession = async () => {
+    try {
+      if (!user?.id || questions.length === 0) return;
+
+      const totalQuestions = questions.length;
+      const correctAnswers = Object.values(answersByIndex).filter(answer => answer.isCorrect).length;
+      const totalTimeSpent = Object.values(answersByIndex).reduce((total, answer) => total + (answer.timeSpent || 0), 0);
+
+      // APIにセッションを保存
+      const response = await fetch(`/api/users/${user.id}/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionType: 'practice',
+          category: setup.selectedCategory || null,
+          difficulty: setup.difficulty !== '全難易度' ? setup.difficulty : null,
+          totalQuestions,
+          correctAnswers,
+          timeSpent: totalTimeSpent
+        }),
+      });
+
+      if (!response.ok) {
+        console.log('セッション保存に失敗');
+      }
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
+  };
+
   const startPractice = async () => {
     try {
       setLoading(true);
@@ -130,47 +206,78 @@ export function PracticeSection({ user, onToggleSidebar }) {
       
       if (setup.practiceMode === 'favorites' && favoriteIds.length > 0) {
         // お気に入り問題のみの演習
-        const params = new URLSearchParams();
-        params.set('ids', favoriteIds.join(','));
-        const res = await fetch(`/api/questions/by-ids?${params.toString()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          questions = Array.isArray(data?.questions) ? data.questions : [];
-        }
+        questions = demoQuestions.filter(q => favoriteIds.includes(q.id));
       } else if (setup.practiceMode === 'incorrect' && incorrectIds.length > 0) {
         // 間違った問題のみの演習
-        const params = new URLSearchParams();
-        params.set('ids', incorrectIds.join(','));
-        const res = await fetch(`/api/questions/by-ids?${params.toString()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          questions = Array.isArray(data?.questions) ? data.questions : [];
-        }
+        questions = demoQuestions.filter(q => incorrectIds.includes(q.id));
       } else {
-        // 通常演習または未着手問題
-        const params = new URLSearchParams();
-        if (setup.selectedCategory) params.set('category', setup.selectedCategory);
-        if (setup.difficulty && setup.difficulty !== '全難易度') params.set('difficulty', setup.difficulty);
-        params.set('count', String(setup.questionCount || 10));
-        
-        if (setup.practiceMode === 'unattempted') {
-          params.set('unattempted', 'true');
-        }
-        
-        const res = await fetch(`/api/questions/daily?${params.toString()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          questions = Array.isArray(data?.questions) ? data.questions : [];
+        // 通常演習または未着手問題 - APIから取得を試行
+        try {
+          const params = new URLSearchParams();
+          if (setup.selectedCategory) params.set('category', setup.selectedCategory);
+          if (setup.difficulty && setup.difficulty !== '全難易度') params.set('difficulty', setup.difficulty);
+          params.set('count', String(setup.questionCount || 10));
+          
+          if (setup.practiceMode === 'unattempted') {
+            params.set('unattempted', 'true');
+          }
+          
+          const res = await fetch(`/api/questions/daily?${params.toString()}`, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            questions = Array.isArray(data?.questions) ? data.questions : [];
+          } else {
+            throw new Error('API request failed');
+          }
+        } catch (apiError) {
+          console.log('API failed, using demo data:', apiError);
+          // フォールバック: デモデータを使用
+          questions = [...demoQuestions];
+          
+          // カテゴリフィルタ
+          if (setup.selectedCategory) {
+            const categoryMap = {
+              '一般小児科': 'general',
+              '新生児・周産期': 'neonatology',
+              '呼吸器': 'respiratory',
+              '循環器': 'cardiovascular',
+              '消化器': 'digestive',
+              '神経': 'neurology',
+              '内分泌': 'endocrinology',
+              '血液・腫瘍': 'hematology',
+              '免疫・アレルギー': 'immunology',
+              '感染症': 'infectious',
+              '救急・蘇生': 'emergency',
+              '発達・行動': 'development'
+            };
+            const targetCategory = categoryMap[setup.selectedCategory];
+            if (targetCategory) {
+              questions = questions.filter(q => q.category === targetCategory);
+            }
+          }
+          
+          // 難易度フィルタ
+          if (setup.difficulty && setup.difficulty !== '全難易度') {
+            const difficultyMap = {
+              '初級': 'basic',
+              '中級': 'intermediate', 
+              '上級': 'advanced'
+            };
+            const targetDifficulty = difficultyMap[setup.difficulty];
+            if (targetDifficulty) {
+              questions = questions.filter(q => q.difficulty === targetDifficulty);
+            }
+          }
+          
+          // 問題数を制限
+          if (questions.length > setup.questionCount) {
+            questions = questions.slice(0, setup.questionCount);
+          }
         }
       }
       
       if (questions.length === 0) {
         throw new Error('選択された条件で問題が見つかりませんでした');
-      }
-      
-      // 問題数を制限
-      if (questions.length > setup.questionCount) {
-        questions = questions.slice(0, setup.questionCount);
       }
       
       setQuestions(questions);
@@ -357,6 +464,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
     } else {
       // 最後の問題の場合は結果画面を表示
       recordTimeFor(currentQuestionIndex);
+      await saveSession();
       setFinished(true);
       setFinishedEarly(false);
     }
@@ -385,6 +493,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
       if (!ok) return;
     }
     recordTimeFor(currentQuestionIndex);
+    await saveSession();
     setFinished(true);
     setFinishedEarly(true);
   };
@@ -400,10 +509,8 @@ export function PracticeSection({ user, onToggleSidebar }) {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`/api/questions/daily?count=5`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('failed');
-      const data = await res.json();
-      setQuestions(Array.isArray(data?.questions) ? data.questions : []);
+      // デモモードではローカルのデモデータを使用
+      setQuestions(demoQuestions.slice(0, 5));
       setStartTime(Date.now());
     } catch (e) {
       setError("問題の読み込みに失敗しました");

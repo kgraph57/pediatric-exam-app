@@ -8,7 +8,9 @@
 		"preview": "react-router preview",
 		"start": "react-router serve",
 		"typecheck": "react-router typegen && tsc --noEmit",
-		"vercel-build": "npm run build"
+		"vercel-build": "npm run build",
+		"import-questions": "node scripts/import-questions.js",
+		"init-db": "psql $DATABASE_URL -f init-database.sql"
 	},
 	"dependencies": {
 		"@auth/core": "^0.37.2",

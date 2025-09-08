@@ -12,9 +12,14 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['userStats', user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${user?.id}/stats`);
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
+      // デモモードではモックデータを返す
+      return {
+        totalQuestionsAnswered: 150,
+        correctAnswers: 120,
+        accuracy: 80,
+        streak: 5,
+        totalStudyTime: 1200
+      };
     },
     enabled: !!user?.id,
   });
@@ -23,9 +28,24 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: questionStats } = useQuery({
     queryKey: ['questionStats'],
     queryFn: async () => {
-      const response = await fetch('/api/questions/stats');
-      if (!response.ok) throw new Error('Failed to fetch question stats');
-      return response.json();
+      // デモモードではモックデータを返す
+      return {
+        totalQuestions: 500,
+        categories: {
+          '一般小児科': 150,
+          '新生児・周産期': 120,
+          '呼吸器': 100,
+          '循環器': 80,
+          '消化器': 90,
+          '神経': 70,
+          '内分泌': 60,
+          '血液・腫瘍': 50,
+          '免疫・アレルギー': 40,
+          '感染症': 110,
+          '救急・蘇生': 80,
+          '発達・行動': 30
+        }
+      };
     },
   });
 
@@ -33,9 +53,12 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: recentActivity } = useQuery({
     queryKey: ['recentActivity', user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${user?.id}/recent-activity`);
-      if (!response.ok) throw new Error('Failed to fetch recent activity');
-      return response.json();
+      // デモモードではモックデータを返す
+      return [
+        { id: 1, type: 'practice', category: '一般小児科', questions: 10, correct: 8, date: new Date().toISOString() },
+        { id: 2, type: 'practice', category: '新生児・周産期', questions: 5, correct: 4, date: new Date(Date.now() - 86400000).toISOString() },
+        { id: 3, type: 'practice', category: '呼吸器', questions: 8, correct: 6, date: new Date(Date.now() - 172800000).toISOString() }
+      ];
     },
     enabled: !!user?.id,
   });

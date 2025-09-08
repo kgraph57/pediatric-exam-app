@@ -53,6 +53,27 @@ CREATE TABLE IF NOT EXISTS incorrect_questions (
     UNIQUE(user_id, question_id)
 );
 
+-- 問題テーブル
+CREATE TABLE IF NOT EXISTS questions (
+    id VARCHAR(255) PRIMARY KEY,
+    category VARCHAR(100) NOT NULL,
+    difficulty VARCHAR(50) NOT NULL,
+    type VARCHAR(20) DEFAULT 'SBA',
+    version VARCHAR(10) DEFAULT '2026',
+    question TEXT NOT NULL,
+    options JSONB NOT NULL,
+    correct_answer INTEGER NOT NULL,
+    explanation JSONB,
+    key_learning_points JSONB,
+    references JSONB,
+    tags JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    author VARCHAR(100),
+    reviewed_by VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'published'
+);
+
 -- 学習セッションテーブル
 CREATE TABLE IF NOT EXISTS study_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -67,6 +88,17 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     completed_at TIMESTAMP
 );
 
+-- ユーザー進捗テーブル
+CREATE TABLE IF NOT EXISTS user_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    question_id VARCHAR(255) REFERENCES questions(id) ON DELETE CASCADE,
+    is_correct BOOLEAN NOT NULL,
+    time_spent INTEGER, -- 秒
+    answered_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, question_id)
+);
+
 -- インデックスの作成
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_study_history_user_id ON study_history(user_id);
@@ -74,6 +106,11 @@ CREATE INDEX IF NOT EXISTS idx_study_history_answered_at ON study_history(answer
 CREATE INDEX IF NOT EXISTS idx_favorite_questions_user_id ON favorite_questions(user_id);
 CREATE INDEX IF NOT EXISTS idx_incorrect_questions_user_id ON incorrect_questions(user_id);
 CREATE INDEX IF NOT EXISTS idx_study_sessions_user_id ON study_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_questions_category ON questions(category);
+CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty);
+CREATE INDEX IF NOT EXISTS idx_questions_status ON questions(status);
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_question_id ON user_progress(question_id);
 
 -- デモユーザーの作成（既存でない場合のみ）
 INSERT INTO users (
