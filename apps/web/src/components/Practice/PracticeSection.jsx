@@ -455,7 +455,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
     setShowExplanation(true);
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       recordTimeFor(currentQuestionIndex);
       setCurrentQuestionIndex(currentQuestionIndex + 1);
