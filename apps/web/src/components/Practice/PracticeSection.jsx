@@ -145,16 +145,43 @@ export function PracticeSection({ user, onToggleSidebar }) {
       
       localStorage.setItem('studyProgress', JSON.stringify(progress));
       
-      // ユーザーの統計も更新
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      if (currentUser.id) {
-        const updatedUser = {
-          ...currentUser,
-          totalAnswered: (currentUser.totalAnswered || 0) + 1,
-          totalCorrect: (currentUser.totalCorrect || 0) + (isCorrect ? 1 : 0),
-          streak: isCorrect ? (currentUser.streak || 0) + 1 : 0
+      // ユーザー別の統計を更新
+      if (user?.id) {
+        const userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+        const currentUserProgress = userProgress[user.id] || {
+          studyProgress: {},
+          favoriteIds: [],
+          incorrectIds: [],
+          categoryStats: {},
+          totalAnswered: 0,
+          totalCorrect: 0,
+          currentStreak: 0,
+          totalStudyTime: 0,
+          lastLogin: new Date().toISOString()
         };
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+        // 統計を更新
+        currentUserProgress.totalAnswered += 1;
+        if (isCorrect) {
+          currentUserProgress.totalCorrect += 1;
+          currentUserProgress.currentStreak += 1;
+        } else {
+          currentUserProgress.currentStreak = 0;
+        }
+        currentUserProgress.totalStudyTime += timeSpent;
+
+        // カテゴリ別統計を更新
+        if (!currentUserProgress.categoryStats[category]) {
+          currentUserProgress.categoryStats[category] = { answered: 0, correct: 0 };
+        }
+        currentUserProgress.categoryStats[category].answered += 1;
+        if (isCorrect) {
+          currentUserProgress.categoryStats[category].correct += 1;
+        }
+
+        // 保存
+        userProgress[user.id] = currentUserProgress;
+        localStorage.setItem('userProgress', JSON.stringify(userProgress));
         
         // ユーザーごとの進捗を保存
         saveCurrentSessionProgress(currentUser.id);

@@ -9,6 +9,10 @@ export const getUserProgress = (userId) => {
       favoriteIds: [],
       incorrectIds: [],
       categoryStats: {},
+      totalAnswered: 0,
+      totalCorrect: 0,
+      currentStreak: 0,
+      totalStudyTime: 0,
       lastLogin: null
     };
   } catch (error) {
@@ -18,6 +22,10 @@ export const getUserProgress = (userId) => {
       favoriteIds: [],
       incorrectIds: [],
       categoryStats: {},
+      totalAnswered: 0,
+      totalCorrect: 0,
+      currentStreak: 0,
+      totalStudyTime: 0,
       lastLogin: null
     };
   }
@@ -46,6 +54,10 @@ export const resetUserProgress = (userId) => {
       favoriteIds: [],
       incorrectIds: [],
       categoryStats: {},
+      totalAnswered: 0,
+      totalCorrect: 0,
+      currentStreak: 0,
+      totalStudyTime: 0,
       lastLogin: new Date().toISOString()
     };
     localStorage.setItem('userProgress', JSON.stringify(allProgress));

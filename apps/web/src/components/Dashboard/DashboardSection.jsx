@@ -12,13 +12,27 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['userStats', user?.id],
     queryFn: async () => {
-      // デモモードではモックデータを返す
+      if (!user?.id) return null;
+      
+      try {
+        const response = await fetch(`/api/users/${user.id}/stats`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.log('API取得に失敗、ローカルストレージから取得:', error);
+      }
+      
+      // フォールバック: ローカルストレージから取得
+      const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+      const userProgress = localProgress[user.id] || {};
+      
       return {
-        totalQuestionsAnswered: 150,
-        correctAnswers: 120,
-        accuracy: 80,
-        streak: 5,
-        totalStudyTime: 1200
+        totalQuestionsAnswered: userProgress.totalAnswered || 0,
+        correctAnswers: userProgress.totalCorrect || 0,
+        accuracy: userProgress.totalAnswered > 0 ? Math.round((userProgress.totalCorrect / userProgress.totalAnswered) * 100) : 0,
+        streak: userProgress.currentStreak || 0,
+        totalStudyTime: userProgress.totalStudyTime || 0
       };
     },
     enabled: !!user?.id,
