@@ -2,6 +2,49 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, ChevronLeft, ChevronRight, BookOpen, Clock, Target } from 'lucide-react';
 
+// 空のカレンダーデータ生成関数（新規ユーザー用）
+function generateEmptyCalendarData(year, month) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDayOfMonth = new Date(year, month - 1, 1);
+  const startingDayOfWeek = firstDayOfMonth.getDay();
+  
+  const calendarDays = [];
+  
+  // 前月の日付を追加（カレンダーの最初の週を埋めるため）
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    const prevMonthDate = new Date(year, month - 1, -startingDayOfWeek + i + 1);
+    calendarDays.push({
+      day: prevMonthDate.getDate(),
+      date: prevMonthDate.toISOString().split('T')[0],
+      isCurrentMonth: false,
+      hasStudy: false,
+      questionsAnswered: 0
+    });
+  }
+  
+  // 今月の日付を追加（すべて学習記録なし）
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month - 1, day);
+    const isToday = new Date().toDateString() === date.toDateString();
+    
+    calendarDays.push({
+      day,
+      date: date.toISOString().split('T')[0],
+      isCurrentMonth: true,
+      isToday,
+      hasStudy: false, // 新規ユーザーは学習記録なし
+      questionsAnswered: 0
+    });
+  }
+  
+  return {
+    days: calendarDays,
+    totalQuestions: 0,
+    studyDays: 0,
+    averageQuestions: 0
+  };
+}
+
 // モックデータ生成関数
 function generateMockCalendarData(year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -99,9 +142,19 @@ export function LearningCalendar({ userId }) {
   const { data: calendarData, isLoading } = useQuery({
     queryKey: ['learning-calendar', userId, year, month],
     queryFn: async () => {
-      // デモモードでは常にモックデータを使用
-      console.log('Using mock data for learning calendar');
-      return generateMockCalendarData(year, month);
+      if (!userId) return generateMockCalendarData(year, month);
+      
+      try {
+        const response = await fetch(`/api/users/${userId}/learning-calendar?year=${year}&month=${month}`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.log('API取得に失敗、空のカレンダーを表示:', error);
+      }
+      
+      // フォールバック: 空のカレンダー（新規ユーザーは学習記録なし）
+      return generateEmptyCalendarData(year, month);
     },
     enabled: !!userId,
   });

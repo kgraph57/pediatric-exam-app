@@ -42,7 +42,16 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: questionStats } = useQuery({
     queryKey: ['questionStats'],
     queryFn: async () => {
-      // デモモードではモックデータを返す
+      try {
+        const response = await fetch('/api/questions/stats');
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.log('API取得に失敗、デモデータを使用:', error);
+      }
+      
+      // フォールバック: デモデータ
       return {
         totalQuestions: 500,
         categories: {
@@ -67,12 +76,19 @@ export function DashboardSection({ user, onSectionChange }) {
   const { data: recentActivity } = useQuery({
     queryKey: ['recentActivity', user?.id],
     queryFn: async () => {
-      // デモモードではモックデータを返す
-      return [
-        { id: 1, type: 'practice', category: '一般小児科', questions: 10, correct: 8, date: new Date().toISOString() },
-        { id: 2, type: 'practice', category: '新生児・周産期', questions: 5, correct: 4, date: new Date(Date.now() - 86400000).toISOString() },
-        { id: 3, type: 'practice', category: '呼吸器', questions: 8, correct: 6, date: new Date(Date.now() - 172800000).toISOString() }
-      ];
+      if (!user?.id) return [];
+      
+      try {
+        const response = await fetch(`/api/users/${user.id}/recent-activity`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.log('API取得に失敗、空の配列を返す:', error);
+      }
+      
+      // フォールバック: 空の配列（新規ユーザーは活動なし）
+      return [];
     },
     enabled: !!user?.id,
   });

@@ -48,6 +48,13 @@ export default function HomePage() {
     }
   };
 
+  // ログアウト機能
+  const handleLogout = () => {
+    setDemoUser(null);
+    localStorage.removeItem('currentUser');
+    setActiveSection('dashboard');
+  };
+
   // ユーザー情報をリフレッシュする関数
   const refreshUserData = () => {
     const savedUser = localStorage.getItem('currentUser');
@@ -211,6 +218,7 @@ export default function HomePage() {
         }}
         onUserUpdate={handleUserUpdate}
         onRefreshUserData={refreshUserData}
+        onLogout={handleLogout}
       />
       <div className="flex">
         <Navigation

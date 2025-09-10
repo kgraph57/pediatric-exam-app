@@ -1,4 +1,4 @@
-import { Home, Menu, Settings, User, UserPlus, LogIn, RotateCcw } from "lucide-react";
+import { Home, Menu, Settings, User, UserPlus, LogIn, LogOut, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { UserProfileModal } from "./UserProfileModal";
 import { UserRegistration } from "../Auth/UserRegistration";
@@ -6,12 +6,23 @@ import { LoginModal } from "../Auth/LoginModal";
 import { ResetProgressModal } from "../Auth/ResetProgressModal";
 import { InvitationRegistration } from "../Auth/InvitationRegistration";
 
-export function Header({ user, onToggleSidebar, onHomeClick, onUserUpdate, onRefreshUserData }) {
+export function Header({ user, onToggleSidebar, onHomeClick, onUserUpdate, onRefreshUserData, onLogout }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showInvitationModal, setShowInvitationModal] = useState(false);
+
+  const handleLogout = () => {
+    if (window.confirm('ログアウトしますか？')) {
+      localStorage.removeItem('currentUser');
+      if (onLogout) {
+        onLogout();
+      } else {
+        window.location.reload();
+      }
+    }
+  };
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-800">
       <div className="px-4 sm:px-8 py-3 flex justify-between items-center h-16">
@@ -61,13 +72,23 @@ export function Header({ user, onToggleSidebar, onHomeClick, onUserUpdate, onRef
               <User size={16} className="text-white" />
             </div>
           </div>
-          <button 
-            onClick={() => setShowLoginModal(true)}
-            className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg"
-            title="ログイン"
-          >
-            <LogIn size={20} />
-          </button>
+          {user ? (
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors hover:bg-red-100 dark:hover:bg-red-900 rounded-lg"
+              title="ログアウト"
+            >
+              <LogOut size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={() => setShowLoginModal(true)}
+              className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg"
+              title="ログイン"
+            >
+              <LogIn size={20} />
+            </button>
+          )}
           <button 
             onClick={() => setShowRegistrationModal(true)}
             className="p-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors hover:bg-green-100 dark:hover:bg-green-900 rounded-lg"
