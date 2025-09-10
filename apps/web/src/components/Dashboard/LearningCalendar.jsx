@@ -112,8 +112,10 @@ function generateMockCalendarData(year, month) {
   };
   
   return {
-    calendarData: calendarDays,
-    monthStats
+    days: calendarDays,
+    totalQuestions: monthStats.totalQuestions,
+    studyDays: monthStats.totalDays,
+    averageQuestions: monthStats.avgQuestionsPerDay
   };
 }
 
