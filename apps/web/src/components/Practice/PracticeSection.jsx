@@ -265,10 +265,10 @@ export function PracticeSection({ user, onToggleSidebar }) {
           if (setup.selectedCategory) {
             const categoryMap = {
               '一般小児科': 'general',
-              '新生児・周産期': 'neonatology',
+              '新生児・周産期': 'neonatal',
               '呼吸器': 'respiratory',
               '循環器': 'cardiovascular',
-              '消化器': 'digestive',
+              '消化器': 'gastrointestinal',
               '神経': 'neurology',
               '内分泌': 'endocrinology',
               '血液・腫瘍': 'hematology',
