@@ -111,6 +111,21 @@ export function PracticeSection({ user, onToggleSidebar }) {
     } catch {}
   }, []);
 
+  // 進捗更新イベントをリッスン
+  useEffect(() => {
+    const handleProgressUpdate = () => {
+      // 進捗が更新されたことを示すために、コンポーネントを再レンダリング
+      setMeta(prevMeta => ({ ...prevMeta }));
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('progressUpdated', handleProgressUpdate);
+      return () => {
+        window.removeEventListener('progressUpdated', handleProgressUpdate);
+      };
+    }
+  }, []);
+
   // 学習進捗を保存する関数
   const saveProgress = async (questionId, isCorrect, category, timeSpent = 0) => {
     try {
@@ -162,8 +177,8 @@ export function PracticeSection({ user, onToggleSidebar }) {
           timeSpent,
           category,
           difficulty: currentQuestion.difficulty,
-          selectedAnswer: selectedAnswer,
-          correctAnswer: currentQuestion.correct_answer
+          selectedAnswer: selectedAnswers,
+          correctAnswer: currentQuestion.correctAnswer
         });
 
         // ユーザー別の統計を更新
@@ -499,7 +514,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
     }
   };
 
-  const checkAnswer = () => {
+  const checkAnswer = async () => {
     if (selectedAnswers.length === 0) return;
 
     const isCorrect = currentQuestion.type === 'SBA'
@@ -518,6 +533,19 @@ export function PracticeSection({ user, onToggleSidebar }) {
       setScore(computeScore(next));
       return next;
     });
+
+    // 進捗を保存
+    if (user?.id && currentQuestion) {
+      const timeSpent = timeSpentByIndex[currentQuestionIndex] || 0;
+      const category = currentQuestion.category || setup.selectedCategory || '一般小児科';
+      
+      await saveProgress(
+        currentQuestion.id,
+        isCorrect,
+        category,
+        timeSpent
+      );
+    }
 
     setShowExplanation(true);
   };
@@ -1008,6 +1036,11 @@ export function PracticeSection({ user, onToggleSidebar }) {
                   setScore(0);
                   setAnswersByIndex({});
                   setFinishedEarly(false);
+                  
+                  // 進捗を強制更新するためにカスタムイベントを発火
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('progressUpdated'));
+                  }
                 }}
                 className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
               >
