@@ -2851,18 +2851,18 @@ export const demoMeta = {
   categories: demoCategories,
   difficulties: demoDifficulties,
   categoryStats: {
-    "一般小児科": { name: "一般小児科", count: 11 },
-    "新生児・周産期": { name: "新生児・周産期", count: 10 },
-    "呼吸器": { name: "呼吸器", count: 10 },
-    "循環器": { name: "循環器", count: 10 },
-    "消化器": { name: "消化器", count: 10 },
-    "神経": { name: "神経", count: 10 },
-    "内分泌": { name: "内分泌", count: 10 },
-    "血液・腫瘍": { name: "血液・腫瘍", count: 10 },
-    "免疫・アレルギー": { name: "免疫・アレルギー", count: 10 },
-    "感染症": { name: "感染症", count: 10 },
-    "救急・蘇生": { name: "救急・蘇生", count: 10 },
-    "発達・行動": { name: "発達・行動", count: 10 }
+    "一般小児科": { name: "一般小児科", count: 50 },
+    "新生児・周産期": { name: "新生児・周産期", count: 45 },
+    "呼吸器": { name: "呼吸器", count: 40 },
+    "循環器": { name: "循環器", count: 40 },
+    "消化器": { name: "消化器", count: 40 },
+    "神経": { name: "神経", count: 40 },
+    "内分泌": { name: "内分泌", count: 35 },
+    "血液・腫瘍": { name: "血液・腫瘍", count: 35 },
+    "免疫・アレルギー": { name: "免疫・アレルギー", count: 35 },
+    "感染症": { name: "感染症", count: 40 },
+    "救急・蘇生": { name: "救急・蘇生", count: 35 },
+    "発達・行動": { name: "発達・行動", count: 30 }
   }
 };
 
