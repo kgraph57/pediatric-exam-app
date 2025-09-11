@@ -34,49 +34,121 @@ export function ProgressSection({ user }) {
     },
   });
 
-  // Generate category data from actual question stats
-  const categoryData = questionStats?.categoryStats ? 
-    Object.entries(questionStats.categoryStats)
+  // Generate category data from actual user progress
+  const categoryData = (() => {
+    if (!user?.id) return [];
+    
+    // ユーザーの実際の進捗を取得
+    const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+    const userProgress = localProgress[user.id] || {};
+    const categoryStats = userProgress.categoryStats || {};
+    
+    const colors = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', '#AF52DE'];
+    
+    // カテゴリ別の実際の進捗を計算
+    const categoryProgress = Object.entries(questionStats?.categoryStats || {})
       .filter(([_, data]) => data.count > 0)
       .map(([key, data], index) => {
-        const colors = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', '#AF52DE'];
-        const mockAccuracy = Math.floor(Math.random() * 40) + 60; // 60-100%のランダムな正解率
-        const mockCorrect = Math.floor((data.count * mockAccuracy) / 100);
+        const userCategoryStats = categoryStats[key] || { answered: 0, correct: 0 };
+        const answered = userCategoryStats.answered || 0;
+        const correct = userCategoryStats.correct || 0;
+        const total = data.count;
+        const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
         
         return {
           name: data.name,
-          accuracy: mockAccuracy,
-          total: data.count,
-          correct: mockCorrect,
+          accuracy: accuracy,
+          total: total,
+          correct: correct,
           color: colors[index % colors.length]
         };
-      }) : [
-        { name: '新生児・周産期', accuracy: 85, total: 229, correct: 195, color: '#007AFF' },
-        { name: '循環器', accuracy: 78, total: 79, correct: 62, color: '#34C759' },
-        { name: '呼吸器', accuracy: 65, total: 147, correct: 96, color: '#FF9500' },
-        { name: '免疫・アレルギー', accuracy: 90, total: 109, correct: 98, color: '#FF3B30' },
-        { name: '内分泌・代謝', accuracy: 55, total: 69, correct: 38, color: '#5856D6' },
-        { name: '救急', accuracy: 72, total: 105, correct: 76, color: '#AF52DE' },
-      ];
+      });
+    
+    return categoryProgress;
+  })();
 
-  const weeklyData = [
-    { day: '月', questions: 15, accuracy: 80 },
-    { day: '火', questions: 20, accuracy: 75 },
-    { day: '水', questions: 18, accuracy: 85 },
-    { day: '木', questions: 22, accuracy: 78 },
-    { day: '金', questions: 25, accuracy: 88 },
-    { day: '土', questions: 30, accuracy: 82 },
-    { day: '日', questions: 12, accuracy: 90 },
-  ];
+  // 週間データを実際のユーザー進捗から生成
+  const weeklyData = (() => {
+    if (!user?.id) return [
+      { day: '月', questions: 0, accuracy: 0 },
+      { day: '火', questions: 0, accuracy: 0 },
+      { day: '水', questions: 0, accuracy: 0 },
+      { day: '木', questions: 0, accuracy: 0 },
+      { day: '金', questions: 0, accuracy: 0 },
+      { day: '土', questions: 0, accuracy: 0 },
+      { day: '日', questions: 0, accuracy: 0 },
+    ];
+    
+    // 学習履歴から週間データを計算
+    const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+    const userSessions = learningSessions[user.id] || [];
+    
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const weeklyStats = days.map(day => {
+      const daySessions = userSessions.filter(session => {
+        const sessionDate = new Date(session.timestamp);
+        const sessionDay = days[sessionDate.getDay()];
+        return sessionDay === day;
+      });
+      
+      const totalQuestions = daySessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+      const totalCorrect = daySessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+      const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+      
+      return {
+        day,
+        questions: totalQuestions,
+        accuracy
+      };
+    });
+    
+    return weeklyStats;
+  })();
 
-  const timeData = [
-    { hour: '6-9', count: 5, accuracy: 85 },
-    { hour: '9-12', count: 15, accuracy: 78 },
-    { hour: '12-15', count: 8, accuracy: 72 },
-    { hour: '15-18', count: 20, accuracy: 85 },
-    { hour: '18-21', count: 25, accuracy: 88 },
-    { hour: '21-24', count: 12, accuracy: 80 },
-  ];
+  // 時間データを実際のユーザー進捗から生成
+  const timeData = (() => {
+    if (!user?.id) return [
+      { hour: '6-9', count: 0, accuracy: 0 },
+      { hour: '9-12', count: 0, accuracy: 0 },
+      { hour: '12-15', count: 0, accuracy: 0 },
+      { hour: '15-18', count: 0, accuracy: 0 },
+      { hour: '18-21', count: 0, accuracy: 0 },
+      { hour: '21-24', count: 0, accuracy: 0 },
+    ];
+    
+    // 学習履歴から時間データを計算
+    const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+    const userSessions = learningSessions[user.id] || [];
+    
+    const timeSlots = [
+      { hour: '6-9', start: 6, end: 9 },
+      { hour: '9-12', start: 9, end: 12 },
+      { hour: '12-15', start: 12, end: 15 },
+      { hour: '15-18', start: 15, end: 18 },
+      { hour: '18-21', start: 18, end: 21 },
+      { hour: '21-24', start: 21, end: 24 },
+    ];
+    
+    const timeStats = timeSlots.map(slot => {
+      const slotSessions = userSessions.filter(session => {
+        const sessionDate = new Date(session.timestamp);
+        const sessionHour = sessionDate.getHours();
+        return sessionHour >= slot.start && sessionHour < slot.end;
+      });
+      
+      const totalQuestions = slotSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+      const totalCorrect = slotSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+      const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+      
+      return {
+        hour: slot.hour,
+        count: totalQuestions,
+        accuracy
+      };
+    });
+    
+    return timeStats;
+  })();
 
   if (isLoading) {
     return (

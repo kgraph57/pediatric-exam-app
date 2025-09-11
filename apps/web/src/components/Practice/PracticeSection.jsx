@@ -654,12 +654,17 @@ export function PracticeSection({ user, onToggleSidebar }) {
             </div>
           ) : (
             meta.categories.map((category) => {
-            // ダミーの進捗データ（実際の実装では、ユーザーの学習履歴から取得）
-            const progress = Math.floor(Math.random() * 100); // 0-100のランダム値
-            const completed = Math.floor(progress * 0.6); // 完了済み
-            const partial = Math.floor(progress * 0.3); // 部分完了
-            const learning = Math.floor(progress * 0.1); // 学習中
-            const remaining = 100 - progress; // 残り
+            // 実際のユーザー進捗から取得
+            const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+            const userProgress = localProgress[user?.id] || {};
+            const categoryStats = userProgress.categoryStats || {};
+            const userCategoryStats = categoryStats[category] || { answered: 0, correct: 0 };
+            
+            const totalQuestions = getCategoryQuestionCount(category);
+            const answered = userCategoryStats.answered || 0;
+            const progress = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+            const completed = answered;
+            const remaining = totalQuestions - answered;
             
             return (
               <div key={category} className="bg-white rounded-md shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow">
@@ -695,32 +700,18 @@ export function PracticeSection({ user, onToggleSidebar }) {
                 {/* 進捗バー */}
                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                   <div className="flex h-full">
-                    {completed > 0 && (
+                    {progress > 0 && (
                       <div 
                         className="bg-blue-700 h-full transition-all duration-300"
-                        style={{ width: `${completed}%` }}
-                        title={`完了: ${completed}%`}
-                      ></div>
-                    )}
-                    {partial > 0 && (
-                      <div 
-                        className="bg-blue-500 h-full transition-all duration-300"
-                        style={{ width: `${partial}%` }}
-                        title={`部分完了: ${partial}%`}
-                      ></div>
-                    )}
-                    {learning > 0 && (
-                      <div 
-                        className="bg-blue-300 h-full transition-all duration-300"
-                        style={{ width: `${learning}%` }}
-                        title={`学習中: ${learning}%`}
+                        style={{ width: `${progress}%` }}
+                        title={`完了: ${progress}%`}
                       ></div>
                     )}
                     {remaining > 0 && (
                       <div 
                         className="bg-gray-200 h-full transition-all duration-300"
-                        style={{ width: `${remaining}%` }}
-                        title={`未着手: ${remaining}%`}
+                        style={{ width: `${100 - progress}%` }}
+                        title={`未着手: ${100 - progress}%`}
                       ></div>
                     )}
                   </div>
@@ -729,26 +720,14 @@ export function PracticeSection({ user, onToggleSidebar }) {
                 {/* 進捗詳細 */}
                 <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
                   <div className="flex items-center space-x-3">
-                    {completed > 0 && (
+                    {progress > 0 && (
                       <span className="flex items-center space-x-1">
                         <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
-                        <span>完了: {completed}%</span>
-                      </span>
-                    )}
-                    {partial > 0 && (
-                      <span className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span>部分: {partial}%</span>
-                      </span>
-                    )}
-                    {learning > 0 && (
-                      <span className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-                        <span>学習中: {learning}%</span>
+                        <span>完了: {progress}%</span>
                       </span>
                     )}
                   </div>
-                  <span className="text-gray-500">残り: {remaining}%</span>
+                  <span className="text-gray-500">残り: {100 - progress}%</span>
                 </div>
               </div>
             );
