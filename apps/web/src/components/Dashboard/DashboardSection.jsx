@@ -253,28 +253,35 @@ export function DashboardSection({ user, onSectionChange }) {
 
 
 
-  // Generate categories from actual question stats
-  const categories = questionStats?.categoryStats ? 
-    Object.entries(questionStats.categoryStats)
+  // Generate categories from actual user progress
+  const categories = (() => {
+    if (!user?.id) return [];
+    
+    // ユーザーの実際の進捗を取得
+    const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+    const userProgress = localProgress[user.id] || {};
+    const categoryStats = userProgress.categoryStats || {};
+    
+    // カテゴリ別の実際の進捗を計算
+    const categoryProgress = Object.entries(questionStats?.categoryStats || {})
       .filter(([_, data]) => data.count > 0)
       .slice(0, 5) // 上位5カテゴリを表示
       .map(([key, data]) => {
-        const mockProgress = Math.floor(Math.random() * 80) + 20; // 20-100%のランダムな進捗
-        const mockCompleted = Math.floor((data.count * mockProgress) / 100);
+        const userCategoryStats = categoryStats[key] || { answered: 0, correct: 0 };
+        const completed = userCategoryStats.answered || 0;
+        const total = data.count;
+        const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
         
         return {
           name: data.name,
-          progress: mockProgress,
-          total: data.count,
-          completed: mockCompleted
+          progress: progress,
+          total: total,
+          completed: completed
         };
-      }) : [
-        { name: '新生児・周産期', progress: 60, total: 229, completed: 137 },
-        { name: '神経', progress: 45, total: 212, completed: 95 },
-        { name: '呼吸器', progress: 80, total: 147, completed: 118 },
-        { name: '一般', progress: 30, total: 204, completed: 61 },
-        { name: '救急', progress: 50, total: 105, completed: 53 },
-      ];
+      });
+    
+    return categoryProgress;
+  })();
 
   if (isLoading) {
     return (

@@ -217,12 +217,33 @@ export function LearningCalendar({ userId }) {
   const { days } = calendarData;
   
   // monthStatsを動的に生成
-  const monthStats = {
-    totalDays: days.filter(day => day.isCurrentMonth && day.hasStudy).length,
-    totalQuestions: days.filter(day => day.isCurrentMonth).reduce((sum, day) => sum + day.questionsAnswered, 0),
-    overallAccuracy: 75, // 固定値
-    avgQuestionsPerDay: Math.round(days.filter(day => day.isCurrentMonth && day.hasStudy).reduce((sum, day) => sum + day.questionsAnswered, 0) / Math.max(1, days.filter(day => day.isCurrentMonth && day.hasStudy).length))
-  };
+  const monthStats = (() => {
+    const totalDays = days.filter(day => day.isCurrentMonth && day.hasStudy).length;
+    const totalQuestions = days.filter(day => day.isCurrentMonth).reduce((sum, day) => sum + day.questionsAnswered, 0);
+    const avgQuestionsPerDay = Math.round(days.filter(day => day.isCurrentMonth && day.hasStudy).reduce((sum, day) => sum + day.questionsAnswered, 0) / Math.max(1, days.filter(day => day.isCurrentMonth && day.hasStudy).length));
+    
+    // 実際のユーザー進捗から正答率を計算
+    let overallAccuracy = 0;
+    if (userId) {
+      try {
+        const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
+        const userProgress = localProgress[userId] || {};
+        const totalAnswered = userProgress.totalAnswered || 0;
+        const totalCorrect = userProgress.totalCorrect || 0;
+        overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+      } catch (error) {
+        console.error('正答率の計算に失敗:', error);
+        overallAccuracy = 0;
+      }
+    }
+    
+    return {
+      totalDays,
+      totalQuestions,
+      overallAccuracy,
+      avgQuestionsPerDay
+    };
+  })();
 
   return (
     <div className="bg-white dark:bg-[#262626] rounded-xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-gray-700">
