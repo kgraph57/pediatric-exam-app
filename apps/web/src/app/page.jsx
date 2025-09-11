@@ -9,12 +9,16 @@ import { HelpCenter } from "../components/Support/HelpCenter";
 import { Navigation } from "../components/Navigation/Navigation";
 import { getUserProgress, applyUserProgress } from "../utils/progressManager";
 import { registerDemoUsers } from "../data/demoUsers";
+import { LoginModal } from "../components/Auth/LoginModal";
+import { UserRegistration } from "../components/Auth/UserRegistration";
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [demoUser, setDemoUser] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [practiceSessionKey, setPracticeSessionKey] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   // ユーザー情報を更新する関数
   const handleUserUpdate = async (updatedProfile) => {
@@ -54,6 +58,20 @@ export default function HomePage() {
     setDemoUser(null);
     localStorage.removeItem('currentUser');
     setActiveSection('dashboard');
+  };
+
+  // ログイン成功時の処理
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    // ユーザー情報をリフレッシュ
+    refreshUserData();
+  };
+
+  // 登録成功時の処理
+  const handleRegistrationSuccess = () => {
+    setShowRegistrationModal(false);
+    // ユーザー情報をリフレッシュ
+    refreshUserData();
   };
 
   // ユーザー情報をリフレッシュする関数
@@ -180,28 +198,6 @@ export default function HomePage() {
     initializeUser();
   }, []);
 
-  // ログイン画面を開くためのイベントリスナー
-  useEffect(() => {
-    const handleOpenLoginModal = () => {
-      // ログイン画面を開く処理（Headerコンポーネントで実装）
-      const event = new CustomEvent('showLoginModal');
-      window.dispatchEvent(event);
-    };
-
-    const handleOpenRegistrationModal = () => {
-      // 登録画面を開く処理（Headerコンポーネントで実装）
-      const event = new CustomEvent('showRegistrationModal');
-      window.dispatchEvent(event);
-    };
-
-    window.addEventListener('openLoginModal', handleOpenLoginModal);
-    window.addEventListener('openRegistrationModal', handleOpenRegistrationModal);
-
-    return () => {
-      window.removeEventListener('openLoginModal', handleOpenLoginModal);
-      window.removeEventListener('openRegistrationModal', handleOpenRegistrationModal);
-    };
-  }, []);
 
   const renderActiveSection = () => {
     if (!demoUser) return null;
@@ -239,20 +235,14 @@ export default function HomePage() {
           
           <div className="space-y-4">
             <button
-              onClick={() => {
-                const event = new CustomEvent('openLoginModal');
-                window.dispatchEvent(event);
-              }}
+              onClick={() => setShowLoginModal(true)}
               className="w-full bg-[#007AFF] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0056CC] transition-colors"
             >
               ログイン
             </button>
             
             <button
-              onClick={() => {
-                const event = new CustomEvent('openRegistrationModal');
-                window.dispatchEvent(event);
-              }}
+              onClick={() => setShowRegistrationModal(true)}
               className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
               新規ユーザー登録
@@ -273,6 +263,24 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      
+      {/* ログインモーダル */}
+      {showLoginModal && (
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={handleLoginSuccess}
+        />
+      )}
+      
+      {/* 登録モーダル */}
+      {showRegistrationModal && (
+        <UserRegistration
+          isOpen={showRegistrationModal}
+          onClose={() => setShowRegistrationModal(false)}
+          onSuccess={handleRegistrationSuccess}
+        />
+      )}
     );
   }
 
