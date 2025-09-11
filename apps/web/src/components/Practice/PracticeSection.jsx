@@ -128,6 +128,14 @@ export function PracticeSection({ user, onToggleSidebar }) {
 
   // 学習進捗を保存する関数
   const saveProgress = async (questionId, isCorrect, category, timeSpent = 0) => {
+    console.log('🚀 saveProgress called:', {
+      questionId,
+      isCorrect,
+      category,
+      timeSpent,
+      userId: user?.id
+    });
+    
     try {
       // APIに学習進捗を保存
       if (user?.id) {
@@ -521,6 +529,15 @@ export function PracticeSection({ user, onToggleSidebar }) {
       ? selectedAnswers[0] === currentQuestion.correctAnswer
       : JSON.stringify([...selectedAnswers].sort()) === JSON.stringify([...currentQuestion.correctAnswer].sort());
 
+    console.log('🔍 checkAnswer called:', {
+      questionId: currentQuestion.id,
+      isCorrect,
+      userId: user?.id,
+      category: currentQuestion.category || setup.selectedCategory || '一般小児科',
+      selectedAnswers,
+      correctAnswer: currentQuestion.correctAnswer
+    });
+
     setAnswersByIndex((prev) => {
       const next = {
         ...prev,
@@ -539,12 +556,25 @@ export function PracticeSection({ user, onToggleSidebar }) {
       const timeSpent = timeSpentByIndex[currentQuestionIndex] || 0;
       const category = currentQuestion.category || setup.selectedCategory || '一般小児科';
       
+      console.log('💾 Saving progress:', {
+        questionId: currentQuestion.id,
+        isCorrect,
+        category,
+        timeSpent,
+        userId: user.id
+      });
+      
       await saveProgress(
         currentQuestion.id,
         isCorrect,
         category,
         timeSpent
       );
+    } else {
+      console.log('❌ Progress not saved - missing user or question:', {
+        userId: user?.id,
+        questionId: currentQuestion?.id
+      });
     }
 
     setShowExplanation(true);
@@ -693,6 +723,16 @@ export function PracticeSection({ user, onToggleSidebar }) {
             const progress = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
             const completed = answered;
             const remaining = totalQuestions - answered;
+            
+            console.log(`📊 Progress for ${category}:`, {
+              userId: user?.id,
+              category,
+              userCategoryStats,
+              totalQuestions,
+              answered,
+              progress,
+              localProgress: JSON.stringify(localProgress, null, 2)
+            });
             
             return (
               <div key={category} className="bg-white rounded-md shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow">
