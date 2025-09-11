@@ -723,19 +723,32 @@ export function PracticeSection({ user, onToggleSidebar }) {
             );
             
             const totalQuestions = getCategoryQuestionCount(category);
-            const answered = categorySessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
-            const progress = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+            
+            // 重複を避けるために、解答した問題のIDを収集
+            const answeredQuestionIds = new Set();
+            categorySessions.forEach(session => {
+              if (session.questions && Array.isArray(session.questions)) {
+                session.questions.forEach(questionId => {
+                  answeredQuestionIds.add(questionId);
+                });
+              }
+            });
+            
+            const answered = answeredQuestionIds.size;
+            const progress = totalQuestions > 0 ? Math.min(100, Math.round((answered / totalQuestions) * 100)) : 0;
             const completed = answered;
-            const remaining = totalQuestions - answered;
+            const remaining = Math.max(0, totalQuestions - answered);
             
             console.log(`📊 Progress for ${category}:`, {
               userId: user?.id,
               category,
               categorySessions: categorySessions.length,
               totalQuestions,
+              answeredQuestionIds: Array.from(answeredQuestionIds),
               answered,
               progress,
-              learningSessions: JSON.stringify(learningSessions, null, 2)
+              completed,
+              remaining
             });
             
             return (
@@ -799,7 +812,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-gray-500">残り: {100 - progress}%</span>
+                  <span className="text-gray-500">残り: {remaining}問</span>
                 </div>
               </div>
             );
