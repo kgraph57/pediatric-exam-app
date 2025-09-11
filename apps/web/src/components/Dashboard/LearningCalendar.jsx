@@ -222,15 +222,16 @@ export function LearningCalendar({ userId }) {
     const totalQuestions = days.filter(day => day.isCurrentMonth).reduce((sum, day) => sum + day.questionsAnswered, 0);
     const avgQuestionsPerDay = Math.round(days.filter(day => day.isCurrentMonth && day.hasStudy).reduce((sum, day) => sum + day.questionsAnswered, 0) / Math.max(1, days.filter(day => day.isCurrentMonth && day.hasStudy).length));
     
-    // 実際のユーザー進捗から正答率を計算
+    // 学習履歴から正答率を計算
     let overallAccuracy = 0;
     if (userId) {
       try {
-        const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
-        const userProgress = localProgress[userId] || {};
-        const totalAnswered = userProgress.totalAnswered || 0;
-        const totalCorrect = userProgress.totalCorrect || 0;
-        overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+        const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+        const userSessions = learningSessions[userId] || [];
+        
+        const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+        const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+        overallAccuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
       } catch (error) {
         console.error('正答率の計算に失敗:', error);
         overallAccuracy = 0;

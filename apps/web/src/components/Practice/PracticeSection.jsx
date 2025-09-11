@@ -712,14 +712,18 @@ export function PracticeSection({ user, onToggleSidebar }) {
             </div>
           ) : (
             meta.categories.map((category) => {
-            // 実際のユーザー進捗から取得
-            const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
-            const userProgress = localProgress[user?.id] || {};
-            const categoryStats = userProgress.categoryStats || {};
-            const userCategoryStats = categoryStats[category] || { answered: 0, correct: 0 };
+            // 学習履歴から進捗を計算
+            const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+            const userSessions = learningSessions[user?.id] || [];
+            
+            // このカテゴリのセッションをフィルタ
+            const categorySessions = userSessions.filter(session => 
+              session.category === category || 
+              (session.category === null && category === '一般小児科') // デフォルトカテゴリ
+            );
             
             const totalQuestions = getCategoryQuestionCount(category);
-            const answered = userCategoryStats.answered || 0;
+            const answered = categorySessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
             const progress = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
             const completed = answered;
             const remaining = totalQuestions - answered;
@@ -727,11 +731,11 @@ export function PracticeSection({ user, onToggleSidebar }) {
             console.log(`📊 Progress for ${category}:`, {
               userId: user?.id,
               category,
-              userCategoryStats,
+              categorySessions: categorySessions.length,
               totalQuestions,
               answered,
               progress,
-              localProgress: JSON.stringify(localProgress, null, 2)
+              learningSessions: JSON.stringify(learningSessions, null, 2)
             });
             
             return (

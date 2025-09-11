@@ -121,16 +121,30 @@ export function DashboardSection({ user, onSectionChange }) {
         console.log('API取得に失敗、ローカルストレージから取得:', error);
       }
       
-      // フォールバック: ローカルストレージから取得
-      const localProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
-      const userProgress = localProgress[user.id] || {};
+      // フォールバック: 学習履歴から統計を計算
+      const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+      const userSessions = learningSessions[user.id] || [];
+      
+      // 学習履歴から統計を計算
+      const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+      const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+      const accuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
+      const totalStudyTime = userSessions.reduce((sum, session) => sum + (session.timeSpent || 0), 0);
+      
+      // 連続学習日数を計算
+      const studyDays = new Set();
+      userSessions.forEach(session => {
+        const date = new Date(session.timestamp).toDateString();
+        studyDays.add(date);
+      });
       
       return {
-        totalQuestionsAnswered: userProgress.totalAnswered || 0,
-        correctAnswers: userProgress.totalCorrect || 0,
-        accuracy: userProgress.totalAnswered > 0 ? Math.round((userProgress.totalCorrect / userProgress.totalAnswered) * 100) : 0,
-        streak: userProgress.currentStreak || 0,
-        totalStudyTime: userProgress.totalStudyTime || 0
+        totalQuestionsAnswered,
+        correctAnswers: totalCorrectAnswers,
+        accuracy,
+        streak: studyDays.size,
+        totalStudyTime,
+        studyDays: studyDays.size
       };
     },
     enabled: !!user?.id,
@@ -197,6 +211,24 @@ export function DashboardSection({ user, onSectionChange }) {
     else if (hour < 18) setGreeting('こんにちは');
     else setGreeting('こんばんは');
   }, []);
+
+  // 進捗更新イベントをリッスン
+  useEffect(() => {
+    const handleProgressUpdate = () => {
+      // 統計データを再取得
+      if (user?.id) {
+        // QueryClientのinvalidateQueriesを使用してデータを再取得
+        window.dispatchEvent(new CustomEvent('refreshStats'));
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('progressUpdated', handleProgressUpdate);
+      return () => {
+        window.removeEventListener('progressUpdated', handleProgressUpdate);
+      };
+    }
+  }, [user?.id]);
 
   const initializeDatabase = async () => {
     setIsInitializing(true);
