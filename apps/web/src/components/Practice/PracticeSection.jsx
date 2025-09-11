@@ -712,9 +712,38 @@ export function PracticeSection({ user, onToggleSidebar }) {
             </div>
           ) : (
             meta.categories.map((category) => {
-            // 実際の解答履歴から進捗を計算
+            // 既存の学習履歴を新しいデータソースに移行
             const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
             const userAnswers = questionAnswers[user?.id] || {};
+            
+            // 既存の学習セッションから解答履歴を復元
+            const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+            const userSessions = learningSessions[user?.id] || [];
+            
+            // 学習セッションから解答履歴を復元（一度だけ実行）
+            if (userSessions.length > 0 && Object.keys(userAnswers).length === 0) {
+              console.log('🔄 Migrating learning sessions to question answers...');
+              userSessions.forEach(session => {
+                if (session.questions && Array.isArray(session.questions)) {
+                  session.questions.forEach((questionId, index) => {
+                    const answerKey = `${questionId}_${session.timestamp}_${index}`;
+                    userAnswers[answerKey] = {
+                      questionId,
+                      userId: user.id,
+                      isCorrect: session.answers && session.answers[index] ? session.answers[index].isCorrect : false,
+                      category: session.category || '一般小児科',
+                      timestamp: session.timestamp,
+                      timeSpent: session.answers && session.answers[index] ? session.answers[index].timeSpent : 0
+                    };
+                  });
+                }
+              });
+              
+              // 移行したデータを保存
+              questionAnswers[user.id] = userAnswers;
+              localStorage.setItem('questionAnswers', JSON.stringify(questionAnswers));
+              console.log('✅ Migration completed:', Object.keys(userAnswers).length, 'answers migrated');
+            }
             
             const totalQuestions = getCategoryQuestionCount(category);
             
