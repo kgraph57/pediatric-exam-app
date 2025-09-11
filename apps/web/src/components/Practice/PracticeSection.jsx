@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Pencil, Flag, Maximize2, Minimize2 } from "lucide-react";
+import { Pencil, Flag, Maximize2, Minimize2, MessageSquare } from "lucide-react";
 import { saveCurrentSessionProgress } from "../../utils/progressManager";
 import { demoQuestions, demoMeta } from "../../data/demoQuestions";
 import { 
@@ -11,6 +11,7 @@ import {
   calculateLearningStats,
   calculateCategoryStats
 } from "../../utils/learningHistory";
+import FeedbackModal from '../Feedback/FeedbackModal';
 
 export function PracticeSection({ user, onToggleSidebar }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -37,6 +38,8 @@ export function PracticeSection({ user, onToggleSidebar }) {
   const [meta, setMeta] = useState({ categories: [], difficulties: [] });
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [incorrectIds, setIncorrectIds] = useState([]);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackType, setFeedbackType] = useState('question');
   const favoriteCount = favoriteIds.length;
   const incorrectCount = incorrectIds.length;
   const [markedByIndex, setMarkedByIndex] = useState({});
@@ -1108,6 +1111,16 @@ export function PracticeSection({ user, onToggleSidebar }) {
               </button>
               <button
                 onClick={() => {
+                  setFeedbackType('question');
+                  setShowFeedbackModal(true);
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <MessageSquare size={20} />
+                <span>フィードバック</span>
+              </button>
+              <button
+                onClick={() => {
                   setSetup(s => ({ ...s, started: false }));
                   setFinished(false);
                   setCurrentQuestionIndex(0);
@@ -1133,291 +1146,26 @@ export function PracticeSection({ user, onToggleSidebar }) {
     );
   }
 
+  // フィードバック送信ハンドラー
+  const handleFeedbackSubmit = (feedbackData) => {
+    console.log('フィードバックが送信されました:', feedbackData);
+    // 必要に応じて追加の処理をここに追加
+  };
+
   return (
-    <div ref={containerRef} className="w-full p-1 lg:p-2">
-      {/* ツールバーをグリッドの外に出して、下の行と独立させる（行高の干渉を防止） */}
-      <div className="px-1 py-0 lg:px-2 lg:py-0 text-gray-800 mb-0">
-        <div className="flex items-center justify-between gap-3 max-w-[1200px] mx-auto">
-          <div className="flex items-center gap-2">
-            <button onClick={prevQuestion} disabled={currentQuestionIndex === 0} className="px-3 py-1.5 rounded bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50">Previous</button>
-            <button onClick={nextQuestion} disabled={currentQuestionIndex >= questions.length - 1} className="px-3 py-1.5 rounded bg-[#007AFF] text-white hover:bg-[#0056CC] disabled:opacity-50">Next</button>
-          </div>
-          <div className="text-center">
-            <p className="text-sm">Item {currentQuestionIndex + 1} of {questions.length}</p>
-            <p className="text-xs text-gray-600">Block Time Elapsed: {formatMs(elapsedMs)}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleFullscreen}
-              className="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300"
-              title="Full Screen"
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-            <button
-              onClick={() => setMarkedByIndex((prev)=>({ ...prev, [currentQuestionIndex]: !prev[currentQuestionIndex] }))}
-              className={`px-3 py-1.5 rounded ${markedByIndex[currentQuestionIndex] ? 'bg-yellow-400 text-black' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
-              title="Mark"
-            >
-              Mark
-            </button>
-            <button onClick={finishEarly} className="px-3 py-1.5 rounded bg-rose-500 hover:bg-rose-600 text-white">End Block</button>
-          </div>
-        </div>
-      </div>
-
-      {/* 本体グリッド：左ナビ + コンテンツを同じ行に配置 */}
-      <div className="grid grid-cols-[56px_1fr] gap-x-2 lg:gap-x-3 gap-y-0 items-start">
-        {/* 左：問題ナビゲーター */}
-        <nav className="hidden md:block sticky top-2 self-start">
-          <ul className="flex flex-col gap-2">
-            {questions.map((_, i) => {
-              const isActive = i === currentQuestionIndex;
-              const isAnswered = !!answersByIndex[i]?.isChecked;
-              return (
-                <li key={i}>
-                  <button
-                    onClick={() => goToQuestion(i)}
-                    className={`${isActive ? 'bg-[#007AFF] text-white border-[#007AFF]' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} relative w-12 h-12 rounded-md border text-sm font-semibold flex items-center justify-center`}
-                    title={`問題 ${i + 1}`}
-                    aria-label={`問題 ${i + 1}`}
-                  >
-                    {i + 1}
-                    {isAnswered && (
-                      <span className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                        <Pencil size={12} />
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        {/* 問題文と解説の2カラムレイアウト（ツールバー直下に密着） */}
-        <div className="col-start-2 mt-0">
-          {!showExplanation ? (
-            <div className="max-w-3xl mt-4">
-              <h2 className="text-sm lg:text-[15px] font-semibold text-gray-800 mt-0 mb-2 leading-relaxed whitespace-pre-wrap break-words">
-                {currentQuestion.question.replace(/[A-E]\.\s*[^A-E]*?(?=[A-E]\.|$)/g, '').trim()}
-              </h2>
-              <div className="space-y-2 mb-5">
-                {currentQuestion.options.map((option, index) => (
-                  <label
-                    key={index}
-                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedAnswers.includes(index)
-                        ? 'border-gray-400 bg-gray-50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type={currentQuestion.type === 'SBA' ? 'radio' : 'checkbox'}
-                      name="answer"
-                      value={index}
-                      checked={selectedAnswers.includes(index)}
-                      onChange={() => handleAnswerSelect(index)}
-                      className="mr-3 text-gray-700"
-                    />
-                    <span className="text-xs lg:text-sm text-gray-700 font-medium">
-                      {String.fromCharCode(65 + index)}. {option}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <div className="text-center">
-                <button
-                  onClick={checkAnswer}
-                  disabled={selectedAnswers.length === 0}
-                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors disabled:cursor-not-allowed"
-                >
-                  解答する
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div
-              ref={splitRef}
-              className={`relative flex w-full ${isDraggingDivider ? 'select-none' : ''}`}
-              style={{ height: 'calc(100vh - 140px)' }}
-            >
-              {/* 左パネル：問題 */}
-              <div
-                className="h-full overflow-y-auto pr-3 mt-4"
-                style={{ flexBasis: `${splitRatio * 100}%` }}
-              >
-                <h2 className="text-sm lg:text-[15px] font-semibold text-gray-800 mb-4 leading-relaxed whitespace-pre-wrap break-words">
-                  {currentQuestion.question.replace(/[A-E]\.\s*[^A-E]*?(?=[A-E]\.|$)/g, '').trim()}
-                </h2>
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option, index) => {
-                    const isSel = selectedAnswers.includes(index);
-                    const isCor = isCorrectOption(index);
-                    const boxCls = isCor
-                      ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-300'
-                      : isSel
-                        ? 'border-rose-400 bg-rose-50 ring-1 ring-rose-300'
-                        : 'border-gray-200 bg-white';
-                    const badgeCls = isCor
-                      ? 'bg-emerald-500 text-white'
-                      : isSel
-                        ? 'bg-rose-500 text-white'
-                        : 'bg-gray-200 text-gray-500';
-                    const badgeText = isCor ? '✓' : isSel ? '✗' : '';
-                    return (
-                      <label
-                        key={index}
-                        className={`flex items-center p-3 border-2 rounded-lg ${boxCls}`}
-                      >
-                        {/* hide native input when採点後 */}
-                        <input
-                          type={currentQuestion.type === 'SBA' ? 'radio' : 'checkbox'}
-                          name="answer"
-                          value={index}
-                          checked={isSel}
-                          disabled
-                          className="hidden"
-                        />
-                        <span className={`mr-3 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${badgeCls}`}>
-                          {badgeText}
-                        </span>
-                        <span className="text-xs lg:text-sm text-gray-700 font-medium">
-                          {String.fromCharCode(65 + index)}. {option}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ドラッグハンドル */}
-              <div
-                onMouseDown={() => setIsDraggingDivider(true)}
-                className={`w-2 hover:w-3 transition-[width] cursor-col-resize bg-gray-200 hover:bg-gray-300 h-full rounded`}
-              />
-
-              {/* 右パネル：解説 */}
-              <div
-                className="h-full overflow-y-auto pl-3 mt-4"
-                style={{ flexBasis: `${(1 - splitRatio) * 100}%` }}
-              >
-                <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-                  <div className="flex items-center flex-wrap gap-6">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">正解</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {currentQuestion.type === 'SBA'
-                          ? String.fromCharCode(65 + currentQuestion.correctAnswer)
-                          : currentQuestion.correctAnswer.map(i => String.fromCharCode(65 + i)).join(', ')
-                        }
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">あなたの解答</p>
-                      <p className={`text-lg font-bold ${
-                        (currentQuestion.type === 'SBA'
-                          ? selectedAnswers[0] === currentQuestion.correctAnswer
-                          : JSON.stringify(selectedAnswers.sort()) === JSON.stringify(currentQuestion.correctAnswer.sort()))
-                          ? 'text-emerald-600' : 'text-gray-800'
-                      }`}>
-                        {currentQuestion.type === 'SBA'
-                          ? String.fromCharCode(65 + selectedAnswers[0])
-                          : selectedAnswers.map(i => String.fromCharCode(65 + i)).join(', ')
-                        }
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">結果</p>
-                      <p className={`text-base font-bold ${
-                        (currentQuestion.type === 'SBA'
-                          ? selectedAnswers[0] === currentQuestion.correctAnswer
-                          : JSON.stringify(selectedAnswers.sort()) === JSON.stringify(currentQuestion.correctAnswer.sort()))
-                          ? 'text-emerald-600' : 'text-rose-600'
-                      }`}>
-                        {(currentQuestion.type === 'SBA'
-                          ? selectedAnswers[0] === currentQuestion.correctAnswer
-                          : JSON.stringify(selectedAnswers.sort()) === JSON.stringify(currentQuestion.correctAnswer.sort()))
-                          ? '正解！' : '不正解'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h4 className="text-base font-semibold text-gray-800 mb-4">選択肢の解説</h4>
-                  <div className="space-y-4">
-                    {currentQuestion.options.map((option, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 rounded-md border border-gray-200 bg-white border-l-4 ${
-                          isCorrectOption(index)
-                            ? 'border-l-emerald-500'
-                            : 'border-l-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-start space-x-4">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            isCorrectOption(index)
-                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                              : 'bg-gray-100 text-gray-700 border border-gray-300'
-                          }`}>
-                            {String.fromCharCode(65 + index)}
-                          </span>
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-800 mb-2 text-sm lg:text-base">
-                              {option}
-                            </p>
-                            <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
-                              {currentQuestion.explanation[index]}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 border border-gray-200 p-4 rounded-md mb-6">
-                  <h4 className="font-bold text-yellow-800 mb-3 text-base">Key Learning Points</h4>
-                  <ul className="list-disc list-inside space-y-2 text-yellow-700">
-                    {currentQuestion.keyLearningPoints.map((point, index) => (
-                      <li key={index} className="leading-relaxed text-gray-800 text-sm lg:text-base">{point}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-white border border-gray-200 p-4 rounded-md mb-6">
-                  <h4 className="font-bold text-gray-800 mb-3 text-base">参考文献</h4>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    {currentQuestion.references.map((ref, index) => {
-                      const hasUrl = typeof ref === 'string' && ref.includes('http');
-                      return (
-                        <li key={index} className="leading-relaxed text-sm lg:text-base">
-                          {hasUrl ? (
-                            <a href={ref.match(/https?:\/\/\S+/)?.[0] || '#'} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">{ref}</a>
-                          ) : (
-                            ref
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-                <div className="text-center">
-                  <button
-                    onClick={nextQuestion}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors"
-                  >
-                    {currentQuestionIndex < questions.length - 1 ? '次の問題' : '結果を見る'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <>
+      {/* 既存のコンポーネント */}
+      {renderContent()}
+      
+      {/* フィードバックモーダル */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        feedbackType={feedbackType}
+        questionId={currentQuestion?.id}
+        category={selectedCategory}
+        onFeedbackSubmit={handleFeedbackSubmit}
+      />
+    </>
   );
 }
