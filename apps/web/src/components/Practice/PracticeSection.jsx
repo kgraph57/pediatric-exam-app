@@ -712,25 +712,18 @@ export function PracticeSection({ user, onToggleSidebar }) {
             </div>
           ) : (
             meta.categories.map((category) => {
-            // 学習履歴から進捗を計算
-            const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
-            const userSessions = learningSessions[user?.id] || [];
-            
-            // このカテゴリのセッションをフィルタ
-            const categorySessions = userSessions.filter(session => 
-              session.category === category || 
-              (session.category === null && category === '一般小児科') // デフォルトカテゴリ
-            );
+            // 実際の解答履歴から進捗を計算
+            const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
+            const userAnswers = questionAnswers[user?.id] || {};
             
             const totalQuestions = getCategoryQuestionCount(category);
             
-            // 重複を避けるために、解答した問題のIDを収集
+            // このカテゴリの問題を解答したものをカウント
             const answeredQuestionIds = new Set();
-            categorySessions.forEach(session => {
-              if (session.questions && Array.isArray(session.questions)) {
-                session.questions.forEach(questionId => {
-                  answeredQuestionIds.add(questionId);
-                });
+            Object.values(userAnswers).forEach(answer => {
+              if (answer.category === category || 
+                  (answer.category === null && category === '一般小児科')) {
+                answeredQuestionIds.add(answer.questionId);
               }
             });
             
@@ -742,13 +735,13 @@ export function PracticeSection({ user, onToggleSidebar }) {
             console.log(`📊 Progress for ${category}:`, {
               userId: user?.id,
               category,
-              categorySessions: categorySessions.length,
               totalQuestions,
               answeredQuestionIds: Array.from(answeredQuestionIds),
               answered,
               progress,
               completed,
-              remaining
+              remaining,
+              userAnswersCount: Object.keys(userAnswers).length
             });
             
             return (

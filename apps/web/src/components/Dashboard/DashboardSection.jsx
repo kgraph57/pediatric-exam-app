@@ -121,20 +121,20 @@ export function DashboardSection({ user, onSectionChange }) {
         console.log('API取得に失敗、ローカルストレージから取得:', error);
       }
       
-      // フォールバック: 学習履歴から統計を計算
-      const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
-      const userSessions = learningSessions[user.id] || [];
+      // フォールバック: 実際の解答履歴から統計を計算
+      const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
+      const userAnswers = questionAnswers[user.id] || {};
       
-      // 学習履歴から統計を計算
-      const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
-      const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
+      // 解答履歴から統計を計算
+      const totalQuestionsAnswered = Object.keys(userAnswers).length;
+      const totalCorrectAnswers = Object.values(userAnswers).filter(answer => answer.isCorrect).length;
       const accuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
-      const totalStudyTime = userSessions.reduce((sum, session) => sum + (session.timeSpent || 0), 0);
+      const totalStudyTime = Object.values(userAnswers).reduce((sum, answer) => sum + (answer.timeSpent || 0), 0);
       
-      // 連続学習日数を計算
+      // 連続学習日数を計算（解答履歴から）
       const studyDays = new Set();
-      userSessions.forEach(session => {
-        const date = new Date(session.timestamp).toDateString();
+      Object.values(userAnswers).forEach(answer => {
+        const date = new Date(answer.timestamp).toDateString();
         studyDays.add(date);
       });
       
