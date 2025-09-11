@@ -61,7 +61,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }) {
 
       // 登録済みユーザーのログイン
       const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      console.log('登録済みユーザー:', registeredUsers);
+      console.log('ログイン試行:', formData.email, formData.password);
+      
       const user = registeredUsers.find(u => u.email === formData.email && u.password === formData.password);
+      console.log('見つかったユーザー:', user);
       
       if (user) {
         // ログイン成功時、ユーザー情報をローカルストレージに保存

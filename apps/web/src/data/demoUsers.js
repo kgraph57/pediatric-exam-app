@@ -102,16 +102,20 @@ export const registerDemoUsers = () => {
   try {
     // 既存の登録ユーザーを取得
     const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    console.log('既存の登録ユーザー:', existingUsers);
     
     // デモユーザーを追加（重複チェック）
     const newUsers = demoUsers.filter(demoUser => 
       !existingUsers.some(existing => existing.email === demoUser.email)
     );
     
+    console.log('新規追加するユーザー:', newUsers);
+    
     if (newUsers.length > 0) {
       const updatedUsers = [...existingUsers, ...newUsers];
       localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
       console.log(`${newUsers.length}人のテストユーザーを登録しました`);
+      console.log('更新後の登録ユーザー:', updatedUsers);
       return true;
     } else {
       console.log('すべてのテストユーザーは既に登録済みです');
