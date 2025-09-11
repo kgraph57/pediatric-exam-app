@@ -1,8 +1,106 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Brain, Calendar, Target, TrendingUp, Zap } from 'lucide-react';
+import { BookOpen, Brain, Calendar, Target, TrendingUp, Zap, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { DailyMission } from './DailyMission';
 import { LearningCalendar } from './LearningCalendar';
+import { 
+  getUserLearningSessions, 
+  calculateLearningStats, 
+  calculateCategoryStats 
+} from '../../utils/learningHistory';
+import { demoQuestions } from '../../data/demoQuestions';
+
+// 学習履歴統計コンポーネント
+function LearningHistoryStats({ userId }) {
+  const [stats, setStats] = useState(null);
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    if (userId) {
+      const learningStats = calculateLearningStats(userId);
+      const learningSessions = getUserLearningSessions(userId);
+      setStats(learningStats);
+      setSessions(learningSessions.slice(0, 5)); // 最新5セッション
+    }
+  }, [userId]);
+
+  if (!stats) return <div className="text-gray-500">読み込み中...</div>;
+
+  return (
+    <div className="space-y-4">
+      {/* 統計サマリー */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center space-x-3">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">正解数</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {stats.totalCorrect}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <XCircle className="w-5 h-5 text-red-500" />
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">不正解数</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {stats.totalIncorrect}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Target className="w-5 h-5 text-blue-500" />
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">正解率</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {stats.accuracy}%
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Clock className="w-5 h-5 text-purple-500" />
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">学習時間</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {Math.round(stats.totalStudyTime / 60)}分
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 最近のセッション */}
+      {sessions.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+            最近の学習セッション
+          </h3>
+          <div className="space-y-2">
+            {sessions.map((session, index) => (
+              <div key={session.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                <div>
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {session.category || '全カテゴリ'} - {session.difficulty || '全難易度'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(session.timestamp).toLocaleDateString('ja-JP')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                    {session.correctAnswers}/{session.totalQuestions}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {Math.round(session.timeSpent / 60)}分
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function DashboardSection({ user, onSectionChange }) {
   const [greeting, setGreeting] = useState('');
@@ -323,6 +421,16 @@ export function DashboardSection({ user, onSectionChange }) {
           </div>
         </div>
       </div>
+
+      {/* Learning History */}
+      {user?.id && (
+        <div className="bg-white dark:bg-[#262626] rounded-xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            学習履歴
+          </h2>
+          <LearningHistoryStats userId={user.id} />
+        </div>
+      )}
 
       {/* Recent activity */}
       {recentActivity && recentActivity.length > 0 && (

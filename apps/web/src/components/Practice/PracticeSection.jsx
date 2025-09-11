@@ -328,6 +328,14 @@ export function PracticeSection({ user, onToggleSidebar }) {
             }
           }
           
+          // 未解答問題を優先的に表示
+          if (setup.practiceMode === 'unattempted' && user?.id) {
+            const unansweredQuestions = getUnansweredQuestions(user.id, questions);
+            if (unansweredQuestions.length > 0) {
+              questions = unansweredQuestions;
+            }
+          }
+          
           // 問題数を制限
           if (questions.length > setup.questionCount) {
             questions = questions.slice(0, setup.questionCount);
