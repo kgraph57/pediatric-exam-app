@@ -991,12 +991,29 @@ export function PracticeSection({ user, onToggleSidebar }) {
             <p className="text-gray-600">
               お疲れさまでした！明日も新しい問題で学習を続けましょう。
             </p>
-            <button
-              onClick={resetQuiz}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
-            >
-              もう一度挑戦
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={resetQuiz}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+              >
+                もう一度挑戦
+              </button>
+              <button
+                onClick={() => {
+                  setSetup(s => ({ ...s, started: false }));
+                  setFinished(false);
+                  setCurrentQuestionIndex(0);
+                  setSelectedAnswers([]);
+                  setShowExplanation(false);
+                  setScore(0);
+                  setAnswersByIndex({});
+                  setFinishedEarly(false);
+                }}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+              >
+                問題演習画面に戻る
+              </button>
+            </div>
           </div>
         </div>
       </div>
