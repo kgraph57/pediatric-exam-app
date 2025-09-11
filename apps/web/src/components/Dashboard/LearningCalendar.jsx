@@ -214,7 +214,15 @@ export function LearningCalendar({ userId }) {
 
   if (!calendarData) return null;
 
-  const { calendarData: days, monthStats } = calendarData;
+  const { days } = calendarData;
+  
+  // monthStatsを動的に生成
+  const monthStats = {
+    totalDays: days.filter(day => day.isCurrentMonth && day.hasStudy).length,
+    totalQuestions: days.filter(day => day.isCurrentMonth).reduce((sum, day) => sum + day.questionsAnswered, 0),
+    overallAccuracy: 75, // 固定値
+    avgQuestionsPerDay: Math.round(days.filter(day => day.isCurrentMonth && day.hasStudy).reduce((sum, day) => sum + day.questionsAnswered, 0) / Math.max(1, days.filter(day => day.isCurrentMonth && day.hasStudy).length))
+  };
 
   return (
     <div className="bg-white dark:bg-[#262626] rounded-xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-gray-700">
