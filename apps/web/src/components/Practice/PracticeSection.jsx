@@ -712,47 +712,48 @@ export function PracticeSection({ user, onToggleSidebar }) {
             </div>
           ) : (
             meta.categories.map((category) => {
-            // 既存の学習履歴を新しいデータソースに移行
-            const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
-            const userAnswers = questionAnswers[user?.id] || {};
-            
-            // 既存の学習セッションから解答履歴を復元
+            // 直接学習履歴から進捗を計算（移行処理なし）
             const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
             const userSessions = learningSessions[user?.id] || [];
             
-            // 学習セッションから解答履歴を復元（一度だけ実行）
-            if (userSessions.length > 0 && Object.keys(userAnswers).length === 0) {
-              console.log('🔄 Migrating learning sessions to question answers...');
-              userSessions.forEach(session => {
-                if (session.questions && Array.isArray(session.questions)) {
-                  session.questions.forEach((questionId, index) => {
-                    const answerKey = `${questionId}_${session.timestamp}_${index}`;
-                    userAnswers[answerKey] = {
-                      questionId,
-                      userId: user.id,
-                      isCorrect: session.answers && session.answers[index] ? session.answers[index].isCorrect : false,
-                      category: session.category || '一般小児科',
-                      timestamp: session.timestamp,
-                      timeSpent: session.answers && session.answers[index] ? session.answers[index].timeSpent : 0
-                    };
-                  });
-                }
-              });
-              
-              // 移行したデータを保存
-              questionAnswers[user.id] = userAnswers;
-              localStorage.setItem('questionAnswers', JSON.stringify(questionAnswers));
-              console.log('✅ Migration completed:', Object.keys(userAnswers).length, 'answers migrated');
-            }
+            console.log('🔍 Direct progress calculation:', {
+              userId: user?.id,
+              category,
+              userSessionsLength: userSessions.length,
+              userSessions: userSessions.map(s => ({ 
+                id: s.id, 
+                category: s.category,
+                questions: s.questions?.length, 
+                answers: s.answers?.length,
+                correctAnswers: s.correctAnswers
+              }))
+            });
             
             const totalQuestions = getCategoryQuestionCount(category);
             
-            // このカテゴリの問題を解答したものをカウント
+            // このカテゴリのセッションをフィルタ
+            const categorySessions = userSessions.filter(session => 
+              session.category === category || 
+              (session.category === null && category === '一般小児科')
+            );
+            
+            console.log('📊 Category sessions:', {
+              category,
+              categorySessionsLength: categorySessions.length,
+              categorySessions: categorySessions.map(s => ({ 
+                id: s.id, 
+                questions: s.questions?.length, 
+                correctAnswers: s.correctAnswers 
+              }))
+            });
+            
+            // このカテゴリで解答した問題のIDを収集
             const answeredQuestionIds = new Set();
-            Object.values(userAnswers).forEach(answer => {
-              if (answer.category === category || 
-                  (answer.category === null && category === '一般小児科')) {
-                answeredQuestionIds.add(answer.questionId);
+            categorySessions.forEach(session => {
+              if (session.questions && Array.isArray(session.questions)) {
+                session.questions.forEach(questionId => {
+                  answeredQuestionIds.add(questionId);
+                });
               }
             });
             

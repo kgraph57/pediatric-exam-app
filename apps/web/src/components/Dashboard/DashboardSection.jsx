@@ -121,50 +121,41 @@ export function DashboardSection({ user, onSectionChange }) {
         console.log('API取得に失敗、ローカルストレージから取得:', error);
       }
       
-      // フォールバック: 実際の解答履歴から統計を計算
-      const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
-      const userAnswers = questionAnswers[user.id] || {};
-      
-      // 既存の学習セッションから解答履歴を復元
+      // フォールバック: 直接学習履歴から統計を計算
       const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
       const userSessions = learningSessions[user.id] || [];
       
-      // 学習セッションから解答履歴を復元（一度だけ実行）
-      if (userSessions.length > 0 && Object.keys(userAnswers).length === 0) {
-        console.log('🔄 Dashboard: Migrating learning sessions to question answers...');
-        userSessions.forEach(session => {
-          if (session.questions && Array.isArray(session.questions)) {
-            session.questions.forEach((questionId, index) => {
-              const answerKey = `${questionId}_${session.timestamp}_${index}`;
-              userAnswers[answerKey] = {
-                questionId,
-                userId: user.id,
-                isCorrect: session.answers && session.answers[index] ? session.answers[index].isCorrect : false,
-                category: session.category || '一般小児科',
-                timestamp: session.timestamp,
-                timeSpent: session.answers && session.answers[index] ? session.answers[index].timeSpent : 0
-              };
-            });
-          }
-        });
-        
-        // 移行したデータを保存
-        questionAnswers[user.id] = userAnswers;
-        localStorage.setItem('questionAnswers', JSON.stringify(questionAnswers));
-        console.log('✅ Dashboard: Migration completed:', Object.keys(userAnswers).length, 'answers migrated');
-      }
+      console.log('🔍 Dashboard: Direct stats calculation:', {
+        userId: user.id,
+        userSessionsLength: userSessions.length,
+        userSessions: userSessions.map(s => ({ 
+          id: s.id, 
+          totalQuestions: s.totalQuestions,
+          correctAnswers: s.correctAnswers,
+          timeSpent: s.timeSpent,
+          timestamp: s.timestamp
+        }))
+      });
       
-      // 解答履歴から統計を計算
-      const totalQuestionsAnswered = Object.keys(userAnswers).length;
-      const totalCorrectAnswers = Object.values(userAnswers).filter(answer => answer.isCorrect).length;
+      // 学習履歴から統計を計算
+      const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+      const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
       const accuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
-      const totalStudyTime = Object.values(userAnswers).reduce((sum, answer) => sum + (answer.timeSpent || 0), 0);
+      const totalStudyTime = userSessions.reduce((sum, session) => sum + (session.timeSpent || 0), 0);
       
-      // 連続学習日数を計算（解答履歴から）
+      // 連続学習日数を計算
       const studyDays = new Set();
-      Object.values(userAnswers).forEach(answer => {
-        const date = new Date(answer.timestamp).toDateString();
+      userSessions.forEach(session => {
+        const date = new Date(session.timestamp).toDateString();
         studyDays.add(date);
+      });
+      
+      console.log('📊 Dashboard stats:', {
+        totalQuestionsAnswered,
+        totalCorrectAnswers,
+        accuracy,
+        totalStudyTime,
+        studyDays: studyDays.size
       });
       
       return {

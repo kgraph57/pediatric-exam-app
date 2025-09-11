@@ -222,45 +222,32 @@ export function LearningCalendar({ userId }) {
     const totalQuestions = days.filter(day => day.isCurrentMonth).reduce((sum, day) => sum + day.questionsAnswered, 0);
     const avgQuestionsPerDay = Math.round(days.filter(day => day.isCurrentMonth && day.hasStudy).reduce((sum, day) => sum + day.questionsAnswered, 0) / Math.max(1, days.filter(day => day.isCurrentMonth && day.hasStudy).length));
     
-    // 実際の解答履歴から正答率を計算
+    // 直接学習履歴から正答率を計算
     let overallAccuracy = 0;
     if (userId) {
       try {
-        const questionAnswers = JSON.parse(localStorage.getItem('questionAnswers') || '{}');
-        const userAnswers = questionAnswers[userId] || {};
-        
-        // 既存の学習セッションから解答履歴を復元
         const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
         const userSessions = learningSessions[userId] || [];
         
-        // 学習セッションから解答履歴を復元（一度だけ実行）
-        if (userSessions.length > 0 && Object.keys(userAnswers).length === 0) {
-          console.log('🔄 Calendar: Migrating learning sessions to question answers...');
-          userSessions.forEach(session => {
-            if (session.questions && Array.isArray(session.questions)) {
-              session.questions.forEach((questionId, index) => {
-                const answerKey = `${questionId}_${session.timestamp}_${index}`;
-                userAnswers[answerKey] = {
-                  questionId,
-                  userId: userId,
-                  isCorrect: session.answers && session.answers[index] ? session.answers[index].isCorrect : false,
-                  category: session.category || '一般小児科',
-                  timestamp: session.timestamp,
-                  timeSpent: session.answers && session.answers[index] ? session.answers[index].timeSpent : 0
-                };
-              });
-            }
-          });
-          
-          // 移行したデータを保存
-          questionAnswers[userId] = userAnswers;
-          localStorage.setItem('questionAnswers', JSON.stringify(questionAnswers));
-          console.log('✅ Calendar: Migration completed:', Object.keys(userAnswers).length, 'answers migrated');
-        }
+        console.log('🔍 Calendar: Direct accuracy calculation:', {
+          userId,
+          userSessionsLength: userSessions.length,
+          userSessions: userSessions.map(s => ({ 
+            id: s.id, 
+            totalQuestions: s.totalQuestions,
+            correctAnswers: s.correctAnswers
+          }))
+        });
         
-        const totalQuestionsAnswered = Object.keys(userAnswers).length;
-        const totalCorrectAnswers = Object.values(userAnswers).filter(answer => answer.isCorrect).length;
+        const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
+        const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
         overallAccuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
+        
+        console.log('📊 Calendar accuracy:', {
+          totalQuestionsAnswered,
+          totalCorrectAnswers,
+          overallAccuracy
+        });
       } catch (error) {
         console.error('正答率の計算に失敗:', error);
         overallAccuracy = 0;
