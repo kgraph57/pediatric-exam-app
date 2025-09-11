@@ -771,7 +771,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
               progress,
               completed,
               remaining,
-              userAnswersCount: Object.keys(userAnswers).length
+              categorySessionsCount: categorySessions.length
             });
             
             return (
