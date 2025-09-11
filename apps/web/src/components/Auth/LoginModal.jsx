@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Users } from 'lucide-react';
 import { applyUserProgress, generateDemoProgress, generateNewUserProgress, saveUserProgress } from '../../utils/progressManager';
+import { demoUsers } from '../../data/demoUsers';
 
 export function LoginModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -167,6 +168,30 @@ export function LoginModal({ isOpen, onClose, onSuccess }) {
               {error}
             </div>
           )}
+
+          {/* テストユーザー情報 */}
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div className="flex items-center mb-3">
+              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-2" />
+              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                テストユーザーアカウント
+              </h3>
+            </div>
+            <div className="space-y-2 text-xs text-blue-700 dark:text-blue-300">
+              <p className="font-medium">以下のアカウントでログインできます：</p>
+              <div className="grid grid-cols-1 gap-1">
+                {demoUsers.slice(0, 3).map((user, index) => (
+                  <div key={user.id} className="flex justify-between">
+                    <span className="font-medium">{user.name}</span>
+                    <span className="text-blue-600 dark:text-blue-400">{user.email}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-blue-600 dark:text-blue-400 font-medium">
+                パスワード: test123
+              </p>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* メールアドレス */}

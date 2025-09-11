@@ -8,6 +8,7 @@ import { AnalyticsDashboard } from "../components/Admin/AnalyticsDashboard";
 import { HelpCenter } from "../components/Support/HelpCenter";
 import { Navigation } from "../components/Navigation/Navigation";
 import { getUserProgress, applyUserProgress } from "../utils/progressManager";
+import { registerDemoUsers } from "../data/demoUsers";
 
 export default function HomePage() {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -95,6 +96,9 @@ export default function HomePage() {
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        // テストユーザーを自動登録
+        registerDemoUsers();
+        
         // まずローカルストレージからユーザー情報を確認
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
