@@ -1,5 +1,5 @@
 import { Home, Menu, Settings, User, UserPlus, LogIn, LogOut, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserProfileModal } from "./UserProfileModal";
 import { UserRegistration } from "../Auth/UserRegistration";
 import { LoginModal } from "../Auth/LoginModal";
@@ -23,6 +23,25 @@ export function Header({ user, onToggleSidebar, onHomeClick, onUserUpdate, onRef
       }
     }
   };
+
+  // ログイン画面を開くイベントリスナー
+  useEffect(() => {
+    const handleShowLoginModal = () => {
+      setShowLoginModal(true);
+    };
+
+    const handleShowRegistrationModal = () => {
+      setShowRegistrationModal(true);
+    };
+
+    window.addEventListener('showLoginModal', handleShowLoginModal);
+    window.addEventListener('showRegistrationModal', handleShowRegistrationModal);
+
+    return () => {
+      window.removeEventListener('showLoginModal', handleShowLoginModal);
+      window.removeEventListener('showRegistrationModal', handleShowRegistrationModal);
+    };
+  }, []);
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-800">
       <div className="px-4 sm:px-8 py-3 flex justify-between items-center h-16">

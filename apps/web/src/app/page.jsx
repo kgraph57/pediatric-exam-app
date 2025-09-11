@@ -180,6 +180,29 @@ export default function HomePage() {
     initializeUser();
   }, []);
 
+  // ログイン画面を開くためのイベントリスナー
+  useEffect(() => {
+    const handleOpenLoginModal = () => {
+      // ログイン画面を開く処理（Headerコンポーネントで実装）
+      const event = new CustomEvent('showLoginModal');
+      window.dispatchEvent(event);
+    };
+
+    const handleOpenRegistrationModal = () => {
+      // 登録画面を開く処理（Headerコンポーネントで実装）
+      const event = new CustomEvent('showRegistrationModal');
+      window.dispatchEvent(event);
+    };
+
+    window.addEventListener('openLoginModal', handleOpenLoginModal);
+    window.addEventListener('openRegistrationModal', handleOpenRegistrationModal);
+
+    return () => {
+      window.removeEventListener('openLoginModal', handleOpenLoginModal);
+      window.removeEventListener('openRegistrationModal', handleOpenRegistrationModal);
+    };
+  }, []);
+
   const renderActiveSection = () => {
     if (!demoUser) return null;
 
@@ -204,9 +227,50 @@ export default function HomePage() {
   if (!demoUser) {
     return (
       <div className="min-h-screen bg-[#F2F2F7] dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[#007AFF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">読み込み中...</p>
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              小児科医国家試験アプリ
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
+              ログインして学習を開始しましょう
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                const event = new CustomEvent('openLoginModal');
+                window.dispatchEvent(event);
+              }}
+              className="w-full bg-[#007AFF] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0056CC] transition-colors"
+            >
+              ログイン
+            </button>
+            
+            <button
+              onClick={() => {
+                const event = new CustomEvent('openRegistrationModal');
+                window.dispatchEvent(event);
+              }}
+              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              新規ユーザー登録
+            </button>
+          </div>
+          
+          <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">
+              テストユーザーアカウント
+            </h3>
+            <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+              <p>メール: tanaka@test.com</p>
+              <p>パスワード: test123</p>
+              <p className="text-blue-600 dark:text-blue-400">
+                その他のテストアカウントも利用可能
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
