@@ -116,11 +116,14 @@ export const registerDemoUsers = () => {
       localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
       console.log(`${newUsers.length}人のテストユーザーを登録しました`);
       console.log('更新後の登録ユーザー:', updatedUsers);
-      return true;
     } else {
       console.log('すべてのテストユーザーは既に登録済みです');
-      return false;
     }
+    
+    // すべてのテストユーザーの進捗をリセット（新規ユーザーは0からスタート）
+    resetAllDemoUserProgress();
+    
+    return true;
   } catch (error) {
     console.error('テストユーザーの登録に失敗しました:', error);
     return false;

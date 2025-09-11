@@ -2,6 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { Pencil, Flag, Maximize2, Minimize2 } from "lucide-react";
 import { saveCurrentSessionProgress } from "../../utils/progressManager";
 import { demoQuestions, demoMeta } from "../../data/demoQuestions";
+import { 
+  saveQuestionAnswer, 
+  saveLearningSession, 
+  getUserQuestionAnswers,
+  getUnansweredQuestions,
+  getIncorrectQuestions,
+  calculateLearningStats,
+  calculateCategoryStats
+} from "../../utils/learningHistory";
 
 export function PracticeSection({ user, onToggleSidebar }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -145,8 +154,19 @@ export function PracticeSection({ user, onToggleSidebar }) {
       
       localStorage.setItem('studyProgress', JSON.stringify(progress));
       
-      // ユーザー別の統計を更新
+      // 学習履歴を保存
       if (user?.id) {
+        // 問題解答履歴を保存
+        saveQuestionAnswer(user.id, questionId, {
+          isCorrect,
+          timeSpent,
+          category,
+          difficulty: currentQuestion.difficulty,
+          selectedAnswer: selectedAnswer,
+          correctAnswer: currentQuestion.correct_answer
+        });
+
+        // ユーザー別の統計を更新
         const userProgress = JSON.parse(localStorage.getItem('userProgress') || '{}');
         const currentUserProgress = userProgress[user.id] || {
           studyProgress: {},
@@ -184,7 +204,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
         localStorage.setItem('userProgress', JSON.stringify(userProgress));
         
         // ユーザーごとの進捗を保存
-        saveCurrentSessionProgress(currentUser.id);
+        saveCurrentSessionProgress(user.id);
       }
     } catch (error) {
       console.error('Failed to save progress:', error);
@@ -199,6 +219,18 @@ export function PracticeSection({ user, onToggleSidebar }) {
       const totalQuestions = questions.length;
       const correctAnswers = Object.values(answersByIndex).filter(answer => answer.isCorrect).length;
       const totalTimeSpent = Object.values(answersByIndex).reduce((total, answer) => total + (answer.timeSpent || 0), 0);
+
+      // 学習セッションを保存
+      saveLearningSession(user.id, {
+        sessionType: 'practice',
+        category: setup.selectedCategory || null,
+        difficulty: setup.difficulty !== '全難易度' ? setup.difficulty : null,
+        totalQuestions,
+        correctAnswers,
+        timeSpent: totalTimeSpent,
+        questions: questions.map(q => q.id),
+        answers: Object.values(answersByIndex)
+      });
 
       // APIにセッションを保存
       const response = await fetch(`/api/users/${user.id}/sessions`, {
