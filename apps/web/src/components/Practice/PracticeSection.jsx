@@ -1169,7 +1169,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
         onClose={() => setShowFeedbackModal(false)}
         feedbackType={feedbackType}
         questionId={currentQuestion?.id}
-        category={selectedCategory}
+        category={setup.selectedCategory}
         onFeedbackSubmit={handleFeedbackSubmit}
       />
     </>
