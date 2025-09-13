@@ -648,6 +648,510 @@ export function PracticeSection({ user, onToggleSidebar }) {
   };
 
   if (loading) return <div className="text-center p-8">問題を読み込み中...</div>;
+  if (!setup.started) {
+    return (
+      <div className="max-w-6xl mx-auto p-4">
+        {/* Hero Section */}
+        <div className="bg-blue-700 rounded-lg p-4 mb-4 text-white text-center shadow-md">
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-xl font-bold mb-1">問題演習を始める</h1>
+            <p className="text-base opacity-95">分野別にカテゴリを選んで、効率的な学習を始めましょう</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-red-800 font-medium">{error}</span>
+            </div>
+          </div>
+        )}
+
+
+
+        {/* 進捗凡例 */}
+        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-3 mb-3">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">学習進捗の凡例</h3>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
+              <span className="text-xs text-gray-700">完了</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-xs text-gray-700">部分完了</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
+              <span className="text-xs text-gray-700">学習中</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+              <span className="text-xs text-gray-700">要復習</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-gray-200 rounded-full"></div>
+              <span className="text-xs text-gray-700">未着手</span>
+            </div>
+          </div>
+        </div>
+
+        {/* カテゴリ一覧 */}
+        <div className="space-y-3">
+          {console.log('Rendering categories:', meta.categories)}
+          {meta.categories.length === 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center">
+                <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-yellow-800 font-medium">
+                  カテゴリ情報を読み込み中... ({meta.categories.length}件)
+                </span>
+              </div>
+            </div>
+          ) : (
+            meta.categories.map((category) => {
+            // 直接学習履歴から進捗を計算（移行処理なし）
+            const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+            const userSessions = learningSessions[user?.id] || [];
+            
+            console.log('🔍 Direct progress calculation:', {
+              userId: user?.id,
+              category,
+              userSessionsLength: userSessions.length,
+              userSessions: userSessions.map(s => ({ 
+                id: s.id, 
+                category: s.category,
+                questions: s.questions?.length, 
+                answers: s.answers?.length,
+                correctAnswers: s.correctAnswers
+              }))
+            });
+            
+            const totalQuestions = getCategoryQuestionCount(category);
+            
+            // このカテゴリのセッションをフィルタ
+            const categorySessions = userSessions.filter(session => 
+              session.category === category || 
+              (session.category === null && category === '一般小児科')
+            );
+            
+            console.log('📊 Category sessions:', {
+              category,
+              categorySessionsLength: categorySessions.length,
+              categorySessions: categorySessions.map(s => ({ 
+                id: s.id, 
+                questions: s.questions?.length, 
+                correctAnswers: s.correctAnswers 
+              }))
+            });
+            
+            // このカテゴリで解答した問題のIDを収集
+            const answeredQuestionIds = new Set();
+            categorySessions.forEach(session => {
+              if (session.questions && Array.isArray(session.questions)) {
+                session.questions.forEach(questionId => {
+                  answeredQuestionIds.add(questionId);
+                });
+              }
+            });
+            
+            const answered = answeredQuestionIds.size;
+            const progress = totalQuestions > 0 ? Math.min(100, Math.round((answered / totalQuestions) * 100)) : 0;
+            const completed = answered;
+            const remaining = Math.max(0, totalQuestions - answered);
+            
+            console.log(`📊 Progress for ${category}:`, {
+              userId: user?.id,
+              category,
+              totalQuestions,
+              answeredQuestionIds: Array.from(answeredQuestionIds),
+              answered,
+              progress,
+              completed,
+              remaining,
+              categorySessionsCount: categorySessions.length
+            });
+            
+            return (
+              <div key={category} className="bg-white rounded-md shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    {/* カテゴリアイコン */}
+                    <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                    
+                    {/* カテゴリ情報 */}
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-800">{category}</h3>
+                      <p className="text-xs text-gray-600">
+                        問題数: {getCategoryQuestionCount(category)}問 | 進捗: {progress}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 演習開始ボタン */}
+                  <button
+                    onClick={() => {
+                      setSetup((s) => ({ ...s, selectedCategory: category, showPracticeModal: true }));
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 text-xs"
+                  >
+                    演習開始
+                  </button>
+                </div>
+
+                {/* 進捗バー */}
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className="flex h-full">
+                    {progress > 0 && (
+                      <div 
+                        className="bg-blue-700 h-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                        title={`完了: ${progress}%`}
+                      ></div>
+                    )}
+                    {remaining > 0 && (
+                      <div 
+                        className="bg-gray-200 h-full transition-all duration-300"
+                        style={{ width: `${100 - progress}%` }}
+                        title={`未着手: ${100 - progress}%`}
+                      ></div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 進捗詳細 */}
+                <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
+                  <div className="flex items-center space-x-3">
+                    {progress > 0 && (
+                      <span className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
+                        <span>完了: {progress}%</span>
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-gray-500">残り: {remaining}問</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+        </div>
+
+        {/* 演習設定モーダル */}
+        {setup.showPracticeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* モーダルヘッダー */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {setup.selectedCategory}の演習設定
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      演習の詳細設定を行ってください
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSetup(s => ({ ...s, showPracticeModal: false }))}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* モーダルコンテンツ */}
+              <div className="p-6 space-y-6">
+                {/* 演習モード選択 */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">演習モード</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 通常演習 */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        setup.practiceMode === 'normal' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
+                      }`}
+                      onClick={() => setSetup(s => ({ ...s, practiceMode: 'normal' }))}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          setup.practiceMode === 'normal' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                        }`}>
+                          {setup.practiceMode === 'normal' && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-800">通常演習</div>
+                          <div className="text-sm text-gray-600">全問題からランダム</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 未着手問題のみ */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        setup.practiceMode === 'unattempted' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-gray-200 hover:border-green-300 hover:bg-green-25'
+                      }`}
+                      onClick={() => setSetup(s => ({ ...s, practiceMode: 'unattempted' }))}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          setup.practiceMode === 'unattempted' ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                        }`}>
+                          {setup.practiceMode === 'unattempted' && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-800">未着手問題</div>
+                          <div className="text-sm text-gray-600">まだ解いていない問題</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* お気に入り問題のみ */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        setup.practiceMode === 'favorites' 
+                          ? 'border-yellow-500 bg-yellow-50' 
+                          : favoriteCount === 0 
+                            ? 'border-gray-200 bg-gray-100 cursor-not-allowed' 
+                            : 'border-gray-200 hover:border-yellow-300 hover:bg-yellow-25'
+                      }`}
+                      onClick={() => favoriteCount > 0 && setSetup(s => ({ ...s, practiceMode: 'favorites' }))}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          setup.practiceMode === 'favorites' ? 'border-yellow-500 bg-yellow-500' : 'border-gray-300'
+                        }`}>
+                          {setup.practiceMode === 'favorites' && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-800">お気に入り問題</div>
+                          <div className="text-sm text-gray-600">{favoriteCount}問</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 間違った問題のみ */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        setup.practiceMode === 'incorrect' 
+                          ? 'border-red-500 bg-red-50' 
+                          : incorrectCount === 0 
+                            ? 'border-gray-200 bg-gray-100 cursor-not-allowed' 
+                            : 'border-gray-200 hover:border-red-300 hover:bg-red-25'
+                      }`}
+                      onClick={() => incorrectCount > 0 && setSetup(s => ({ ...s, practiceMode: 'incorrect' }))}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          setup.practiceMode === 'incorrect' ? 'border-red-500 bg-red-500' : 'border-gray-300'
+                        }`}>
+                          {setup.practiceMode === 'incorrect' && (
+                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-800">間違った問題</div>
+                          <div className="text-sm text-gray-600">{incorrectCount}問</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 問題数選択 */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">問題数</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[5, 10, 15, 20, 25, 30, 40, 50].map((count) => (
+                      <div
+                        key={count}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
+                          setup.questionCount === count
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
+                        }`}
+                        onClick={() => setSetup(s => ({ ...s, questionCount: count }))}
+                      >
+                        <div className="text-lg font-bold">{count}</div>
+                        <div className="text-xs text-gray-600">問</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 難易度選択 */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">難易度</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {['初級', '中級', '上級', '全難易度'].map((difficulty) => (
+                      <div
+                        key={difficulty}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 text-center ${
+                          setup.difficulty === difficulty
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
+                        }`}
+                        onClick={() => setSetup(s => ({ ...s, difficulty }))}
+                      >
+                        <div className="font-medium">{difficulty}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 学習スタイル */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">学習スタイル</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { id: 'timed', label: '制限時間あり', desc: '問題ごとに時間制限' },
+                      { id: 'untimed', label: '制限時間なし', desc: 'じっくり考えて解答' },
+                      { id: 'review', label: '復習モード', desc: '解説を詳しく確認' },
+                      { id: 'quick', label: 'クイックモード', desc: '素早く解答' }
+                    ].map((style) => (
+                      <div
+                        key={style.id}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                          setup.learningStyle === style.id
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
+                        }`}
+                        onClick={() => setSetup(s => ({ ...s, learningStyle: style.id }))}
+                      >
+                        <div className="font-medium">{style.label}</div>
+                        <div className="text-xs text-gray-600">{style.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* モーダルフッター */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setSetup(s => ({ ...s, showPracticeModal: false }))}
+                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSetup(s => ({ 
+                        ...s, 
+                        showPracticeModal: false, 
+                        started: true,
+                        category: s.selectedCategory
+                      }));
+                      startPractice();
+                      // サイドバーを自動で閉じる
+                      if (onToggleSidebar) {
+                        onToggleSidebar();
+                      }
+                    }}
+                    disabled={!setup.practiceMode || !setup.questionCount}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    演習開始
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (questions.length === 0) return <div className="text-center p-8">問題が見つかりません</div>;
+
+  if (finished || currentQuestionIndex >= questions.length) {
+    const answeredCount = getAnsweredCount();
+    const accuracy = answeredCount > 0 ? Math.round((score / answeredCount) * 100) : 0;
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">{finishedEarly ? '演習を終了しました' : '今日の問題完了！'}</h2>
+          <div className="space-y-2 mb-6">
+            <p className="text-xl text-gray-600">正解数: {score} / {answeredCount}</p>
+            <p className="text-sm text-gray-500">回答数: {answeredCount} / {questions.length}</p>
+          </div>
+          <p className="text-lg text-gray-700 mb-8">正答率: {accuracy}%</p>
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              お疲れさまでした！明日も新しい問題で学習を続けましょう。
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={resetQuiz}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+              >
+                もう一度挑戦
+              </button>
+              <button
+                onClick={() => {
+                  setFeedbackType('question');
+                  setShowFeedbackModal(true);
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <MessageSquare size={20} />
+                <span>フィードバック</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSetup(s => ({ ...s, started: false }));
+                  setFinished(false);
+                  setCurrentQuestionIndex(0);
+                  setSelectedAnswers([]);
+                  setShowExplanation(false);
+                  setScore(0);
+                  setAnswersByIndex({});
+                  setFinishedEarly(false);
+                  
+                  // 進捗を強制更新するためにカスタムイベントを発火
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('progressUpdated'));
+                  }
+                }}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+              >
+                問題演習画面に戻る
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // フィードバック送信ハンドラー
+  const handleFeedbackSubmit = (feedbackData) => {
+    console.log('フィードバックが送信されました:', feedbackData);
+    // 必要に応じて追加の処理をここに追加
+  };
+
   // 問題演習の設定画面を表示
   if (!setup.started) {
     return (
