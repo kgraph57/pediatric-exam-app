@@ -1152,10 +1152,16 @@ export function PracticeSection({ user, onToggleSidebar }) {
     // 必要に応じて追加の処理をここに追加
   };
 
+  // メインの練習画面を返す
   return (
     <>
-      {/* 既存のコンポーネント */}
-      {renderContent()}
+      <div className="max-w-6xl mx-auto p-4">
+        {/* 練習画面の内容 */}
+        <div className="text-center p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">問題演習</h2>
+          <p className="text-gray-600">問題演習を開始してください。</p>
+        </div>
+      </div>
       
       {/* フィードバックモーダル */}
       <FeedbackModal
