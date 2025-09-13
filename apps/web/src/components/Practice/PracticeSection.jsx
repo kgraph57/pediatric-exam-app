@@ -1152,11 +1152,125 @@ export function PracticeSection({ user, onToggleSidebar }) {
     // 必要に応じて追加の処理をここに追加
   };
 
-  // メインの練習画面を返す
+  // 問題演習の設定画面を表示
+  if (!setup.started) {
+    return (
+      <>
+        <div className="max-w-6xl mx-auto p-4">
+          {/* Hero Section */}
+          <div className="bg-blue-700 rounded-lg p-4 mb-4 text-white text-center shadow-md">
+            <div className="max-w-3xl mx-auto">
+              <h1 className="text-2xl font-bold mb-2">小児科専門医試験対策</h1>
+              <p className="text-blue-100">実践的な問題演習で合格を目指しましょう</p>
+            </div>
+          </div>
+
+          {/* カテゴリ選択 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">カテゴリを選択してください</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {meta.categories.map((category) => {
+                // 直接学習履歴から進捗を計算（移行処理なし）
+                const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
+                const userSessions = learningSessions[user?.id] || [];
+                
+                const totalQuestions = getCategoryQuestionCount(category);
+                
+                // このカテゴリのセッションをフィルタ
+                const categorySessions = userSessions.filter(session => 
+                  session.category === category || 
+                  (session.category === null && category === '一般小児科')
+                );
+                
+                // このカテゴリで解答した問題のIDを収集
+                const answeredQuestionIds = new Set();
+                categorySessions.forEach(session => {
+                  if (session.questions && Array.isArray(session.questions)) {
+                    session.questions.forEach(questionId => {
+                      answeredQuestionIds.add(questionId);
+                    });
+                  }
+                });
+                
+                const answered = answeredQuestionIds.size;
+                const progress = totalQuestions > 0 ? Math.min(100, Math.round((answered / totalQuestions) * 100)) : 0;
+                const completed = answered;
+                const remaining = Math.max(0, totalQuestions - answered);
+                
+                return (
+                  <div key={category} className="bg-white rounded-md shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <BookOpen size={16} className="text-blue-600" />
+                        <span className="font-medium text-gray-800 text-sm">{category}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        問題数: {getCategoryQuestionCount(category)}問 | 進捗: {progress}%
+                      </span>
+                    </div>
+
+                    {/* 進捗バー */}
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                      <div
+                        className="bg-blue-600 h-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                        title={`完了: ${progress}%`}
+                      ></div>
+                      {progress < 100 && (
+                        <div
+                          className="bg-gray-200 h-full transition-all duration-300"
+                          style={{ width: `${100 - progress}%` }}
+                          title={`未着手: ${100 - progress}%`}
+                        ></div>
+                      )}
+                    </div>
+
+                    {/* 進捗詳細 */}
+                    <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
+                      <div className="flex items-center space-x-3">
+                        {progress > 0 && (
+                          <span className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
+                            <span>完了: {progress}%</span>
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-gray-500">残り: {remaining}問</span>
+                    </div>
+
+                    {/* 演習開始ボタン */}
+                    <button
+                      onClick={() => {
+                        setSetup((s) => ({ ...s, selectedCategory: category, showPracticeModal: true }));
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 text-xs w-full mt-3"
+                    >
+                      演習開始
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        
+        {/* フィードバックモーダル */}
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          feedbackType={feedbackType}
+          questionId={currentQuestion?.id}
+          category={setup.selectedCategory}
+          onFeedbackSubmit={handleFeedbackSubmit}
+        />
+      </>
+    );
+  }
+
+  // その他の状態（演習中、終了など）の処理
   return (
     <>
       <div className="max-w-6xl mx-auto p-4">
-        {/* 練習画面の内容 */}
         <div className="text-center p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">問題演習</h2>
           <p className="text-gray-600">問題演習を開始してください。</p>
