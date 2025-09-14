@@ -1045,6 +1045,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
                 if (currentQuestionIndex > 0) {
                   setCurrentQuestionIndex(currentQuestionIndex - 1);
                   setSelectedAnswers([]);
+                  setShowExplanation(false);
                 }
               }}
               disabled={currentQuestionIndex === 0}
@@ -1053,39 +1054,97 @@ export function PracticeSection({ user, onToggleSidebar }) {
               前の問題
                 </button>
             
-            <button
-              onClick={() => {
-                if (selectedAnswers.length > 0) {
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
                   const isCorrect = selectedAnswers[0] === currentQuestionData.correctAnswer;
-                  if (isCorrect) {
-                    setScore(score + 1);
-                  }
-                  
-                  setAnswersByIndex({
-                    ...answersByIndex,
+                  setAnswersByIndex(prev => ({
+                    ...prev,
                     [currentQuestionIndex]: {
-                      selectedAnswers,
-                      isCorrect,
-                      isChecked: true
+                      selected: selectedAnswers[0],
+                      correct: currentQuestionData.correctAnswer,
+                      isCorrect
                     }
-                  });
-                  
-                  if (currentQuestionIndex < questions.length - 1) {
-                    setCurrentQuestionIndex(currentQuestionIndex + 1);
-                    setSelectedAnswers([]);
-                  } else {
-                    setFinished(true);
+                  }));
+                  setShowExplanation(true);
+                }}
+                disabled={selectedAnswers.length === 0 || showExplanation}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                解答を確認
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (selectedAnswers.length > 0) {
+                    const isCorrect = selectedAnswers[0] === currentQuestionData.correctAnswer;
+                    if (isCorrect) {
+                      setScore(score + 1);
+                    }
+                    
+                    setAnswersByIndex(prev => ({
+                      ...prev,
+                      [currentQuestionIndex]: {
+                        selected: selectedAnswers[0],
+                        correct: currentQuestionData.correctAnswer,
+                        isCorrect
+                      }
+                    }));
+                    
+                    if (currentQuestionIndex < questions.length - 1) {
+                      setCurrentQuestionIndex(currentQuestionIndex + 1);
+                      setSelectedAnswers([]);
+                      setShowExplanation(false);
+                    } else {
+                      setFinished(true);
+                    }
                   }
-                }
-              }}
-              disabled={selectedAnswers.length === 0}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {currentQuestionIndex < questions.length - 1 ? '次の問題' : '演習終了'}
-            </button>
+                }}
+                disabled={selectedAnswers.length === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {currentQuestionIndex < questions.length - 1 ? '次の問題' : '演習終了'}
+              </button>
+            </div>
                           </div>
                   </div>
                 </div>
+
+        {/* 解答・解説エリア */}
+        {showExplanation && (
+          <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">解答・解説</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm font-medium text-gray-600 mb-1">正解</div>
+                  <div className="text-gray-800">
+                    {String.fromCharCode(65 + currentQuestionData.correctAnswer)}. {currentQuestionData.options[currentQuestionData.correctAnswer]}
+                  </div>
+                </div>
+                
+                {selectedAnswers.length > 0 && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-600 mb-1">あなたの解答</div>
+                    <div className={`${selectedAnswers[0] === currentQuestionData.correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
+                      {String.fromCharCode(65 + selectedAnswers[0])}. {currentQuestionData.options[selectedAnswers[0]]}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {currentQuestionData.explanation && (
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm font-medium text-gray-600 mb-2">解説</div>
+                  <div className="text-gray-800 text-sm leading-relaxed">
+                    {currentQuestionData.explanation}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* フィードバックモーダル */}
       <FeedbackModal
