@@ -53,6 +53,15 @@ export function PracticeSection({ user, onToggleSidebar }) {
   const handleFeedbackSubmit = (feedbackData) => {
     console.log('フィードバックが送信されました:', feedbackData);
   };
+
+  // カテゴリ選択時の処理
+  const handleCategorySelect = (category) => {
+    setSetup(prev => ({
+      ...prev,
+      selectedCategory: category,
+      showPracticeModal: true
+    }));
+  };
   const [splitRatio, setSplitRatio] = useState(0.5); // 0..1 左右比率
   const [isDraggingDivider, setIsDraggingDivider] = useState(false);
   const splitRef = useRef(null);
@@ -854,7 +863,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
           feedbackType={feedbackType}
-          questionId={currentQuestion?.id}
+          questionId={currentQuestionData?.id}
           category={setup.selectedCategory}
           onFeedbackSubmit={handleFeedbackSubmit}
         />
@@ -884,7 +893,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
           feedbackType={feedbackType}
-          questionId={currentQuestion?.id}
+          questionId={currentQuestionData?.id}
           category={setup.selectedCategory}
           onFeedbackSubmit={handleFeedbackSubmit}
         />
@@ -974,7 +983,7 @@ export function PracticeSection({ user, onToggleSidebar }) {
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
           feedbackType={feedbackType}
-          questionId={currentQuestion?.id}
+          questionId={currentQuestionData?.id}
           category={setup.selectedCategory}
           onFeedbackSubmit={handleFeedbackSubmit}
         />
