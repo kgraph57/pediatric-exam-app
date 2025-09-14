@@ -48,6 +48,11 @@ export function PracticeSection({ user, onToggleSidebar }) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+
+  // フィードバック送信ハンドラー
+  const handleFeedbackSubmit = (feedbackData) => {
+    console.log('フィードバックが送信されました:', feedbackData);
+  };
   const [splitRatio, setSplitRatio] = useState(0.5); // 0..1 左右比率
   const [isDraggingDivider, setIsDraggingDivider] = useState(false);
   const splitRef = useRef(null);
@@ -976,11 +981,6 @@ export function PracticeSection({ user, onToggleSidebar }) {
       </>
     );
   }
-
-  // フィードバック送信ハンドラー
-  const handleFeedbackSubmit = (feedbackData) => {
-    console.log('フィードバックが送信されました:', feedbackData);
-  };
 
   // 演習中の問題表示
   const currentQuestionData = questions[currentQuestionIndex];
