@@ -49,6 +49,9 @@ export function PracticeSection({ user, onToggleSidebar }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
 
+  // 現在の問題データ
+  const currentQuestionData = questions[currentQuestionIndex];
+
   // フィードバック送信ハンドラー
   const handleFeedbackSubmit = (feedbackData) => {
     console.log('フィードバックが送信されました:', feedbackData);
@@ -992,8 +995,6 @@ export function PracticeSection({ user, onToggleSidebar }) {
   }
 
   // 演習中の問題表示
-  const currentQuestionData = questions[currentQuestionIndex];
-  
   return (
     <>
       <div className="max-w-6xl mx-auto p-4">
