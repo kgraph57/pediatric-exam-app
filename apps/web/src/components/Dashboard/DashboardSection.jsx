@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Brain, Calendar, Target, TrendingUp, Zap, Clock, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { BookOpen, Brain, Calendar, Target, TrendingUp, Zap, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { DailyMission } from './DailyMission';
 import { LearningCalendar } from './LearningCalendar';
 import { 
@@ -8,7 +8,6 @@ import {
   calculateLearningStats, 
   calculateCategoryStats 
 } from '../../utils/learningHistory';
-import FeedbackModal from '../Feedback/FeedbackModal';
 import { demoQuestions } from '../../data/demoQuestions';
 
 // 学習履歴統計コンポーネント
@@ -106,7 +105,6 @@ function LearningHistoryStats({ userId }) {
 export function DashboardSection({ user, onSectionChange }) {
   const [greeting, setGreeting] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Get user statistics
   const { data: stats, isLoading } = useQuery({
@@ -123,23 +121,11 @@ export function DashboardSection({ user, onSectionChange }) {
         console.log('API取得に失敗、ローカルストレージから取得:', error);
       }
       
-      // フォールバック: 直接学習履歴から統計を計算
+      // フォールバック: 学習セッションから統計を計算
       const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '{}');
       const userSessions = learningSessions[user.id] || [];
       
-      console.log('🔍 Dashboard: Direct stats calculation:', {
-        userId: user.id,
-        userSessionsLength: userSessions.length,
-        userSessions: userSessions.map(s => ({ 
-          id: s.id, 
-          totalQuestions: s.totalQuestions,
-          correctAnswers: s.correctAnswers,
-          timeSpent: s.timeSpent,
-          timestamp: s.timestamp
-        }))
-      });
-      
-      // 学習履歴から統計を計算
+      // 学習セッションから統計を計算
       const totalQuestionsAnswered = userSessions.reduce((sum, session) => sum + (session.totalQuestions || 0), 0);
       const totalCorrectAnswers = userSessions.reduce((sum, session) => sum + (session.correctAnswers || 0), 0);
       const accuracy = totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : 0;
@@ -150,14 +136,6 @@ export function DashboardSection({ user, onSectionChange }) {
       userSessions.forEach(session => {
         const date = new Date(session.timestamp).toDateString();
         studyDays.add(date);
-      });
-      
-      console.log('📊 Dashboard stats:', {
-        totalQuestionsAnswered,
-        totalCorrectAnswers,
-        accuracy,
-        totalStudyTime,
-        studyDays: studyDays.size
       });
       
       return {
@@ -365,15 +343,6 @@ export function DashboardSection({ user, onSectionChange }) {
               今日も小児科専門医試験の準備を頑張りましょう。
             </p>
           </div>
-          <div className="mt-4 lg:mt-0">
-            <button
-              onClick={() => setShowFeedbackModal(true)}
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
-            >
-              <MessageSquare size={18} />
-              <span>フィードバック</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -525,18 +494,6 @@ export function DashboardSection({ user, onSectionChange }) {
           </div>
         </div>
       )}
-
-      {/* フィードバックモーダル */}
-      <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
-        feedbackType="overall"
-        questionId={null}
-        category={null}
-        onFeedbackSubmit={(feedbackData) => {
-          console.log('全体的なフィードバックが送信されました:', feedbackData);
-        }}
-      />
     </div>
   );
 }
